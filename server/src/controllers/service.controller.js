@@ -93,3 +93,27 @@ export const createServiceRequest = async (req, res) => {
         });
     }
 };
+
+//get all request
+export const getMyAllRequest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const requests = await ServiceRequest.find({
+      customer: userId
+    }).sort({ createdAt: -1 }); // latest first
+
+    return res.status(200).json({
+      success: true,
+      count: requests.length,
+      data: requests
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};

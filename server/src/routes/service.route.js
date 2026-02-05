@@ -1,5 +1,5 @@
 import upload from "../middlewares/multer.js"
-import { createServiceRequest } from "../controllers/service.controller.js";
+import { createServiceRequest, getMyAllRequest } from "../controllers/service.controller.js";
 import { authMiddleware, authorizeRoles } from "../middlewares/auth.middleware.js";
 
 
@@ -11,8 +11,15 @@ serviceRouter.post(
   "/create",
   authMiddleware,
   authorizeRoles("USER"),
-  upload.array("images", 5), 
+  upload.array("images", 2), 
   createServiceRequest
+);
+
+serviceRouter.get(
+  "/my",
+  authMiddleware,
+  authorizeRoles("USER"),
+  getMyAllRequest
 );
 
 
