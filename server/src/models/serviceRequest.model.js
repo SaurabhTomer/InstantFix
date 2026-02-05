@@ -1,32 +1,44 @@
 import mongoose from "mongoose";
 
-const serviceRequestSchema = new mongoose.Schema({
-  customer: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+const serviceRequestSchema = new mongoose.Schema(
+  {
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    electrician: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
+
+    issueType: {
+      type: String,
+      enum: ["fan", "light", "switch", "wiring", "other"],
+      required: true
+    },
+
+    description: {
+      type: String,
+      required: true
+    },
+
+    images: [String],
+
+    status: {
+      type: String,
+      enum: ["pending", "accepted", "completed"],
+      default: "pending"
+    }
   },
+  { timestamps: true }
+);
 
-  electrician: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    default: null
-  },
+const ServiceRequest = mongoose.model(
+  "ServiceRequest",
+  serviceRequestSchema
+);
 
-  issueType: String,
-  description: String,
-
-  status: {
-    type: String,
-    enum: ["pending", "accepted", "completed"],
-    default: "pending"
-  },
-
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-
-const serviceRequest = new mongoose.model("Service" , serviceRequestSchema)
-export default serviceRequest;
+export default ServiceRequest;
