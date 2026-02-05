@@ -13,11 +13,24 @@ const serviceRequestSchema = new mongoose.Schema(
       ref: "User",
       default: null
     },
+    // this is used when user send data manualy like ne address while doing request
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      pincode: String
+    },
 
     issueType: {
       type: String,
-      enum: ["fan", "light", "switch", "wiring", "other"],
+      enum: ["Fan", "Light", "Switch", "Wiring", "Other"],
       required: true
+    },
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      pincode: String
     },
 
     description: {

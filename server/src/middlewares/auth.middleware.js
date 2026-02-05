@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import redis from "../config/redis.js";
 
-const authMiddleware = async (req, res, next) => {
+//verify token and pass id to request
+export const authMiddleware = async (req, res, next) => {
   try {
     // 1️⃣ Get token from cookie
     const token = req.cookies?.token;
@@ -32,4 +33,24 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-export default authMiddleware;
+
+//role based
+export const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({
+        message: "Unauthorized access"
+      });
+    }
+
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({
+        message: "Access denied for this role"
+      });
+    }
+
+    next();
+  };
+};
+
+
