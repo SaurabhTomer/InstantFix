@@ -99,13 +99,30 @@ export const getMyAllRequest = async (req, res) => {
   try {
     const userId = req.user.id;
 
+    // query params
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const skip = (page - 1) * limit;
+
+    //count total no. of request
+    const total = await ServiceRequest.countDocuments({
+      customer: userId
+    });
+    //find request 
     const requests = await ServiceRequest.find({
       customer: userId
-    }).sort({ createdAt: -1 }); // latest first
+    })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({
       success: true,
-      count: requests.length,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
       data: requests
     });
 

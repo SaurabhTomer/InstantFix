@@ -15,8 +15,9 @@ serviceRouter.post(
   createServiceRequest
 );
 
+//pagination
 serviceRouter.get(
-  "/my",
+  "/my-requests",
   authMiddleware,
   authorizeRoles("USER"),
   getMyAllRequest
