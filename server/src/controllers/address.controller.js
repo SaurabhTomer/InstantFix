@@ -204,3 +204,53 @@ export const getAllAddress = async (req, res) => {
   }
 };
 
+//set address default
+export const setDefaultAddress = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { addressId } = req.params;
+
+    // 1️⃣ Find user
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // 2️⃣ Find address
+    const address = user.address.find(addr =>
+      addr._id.equals(addressId)
+    );
+
+    if (!address) {
+      return res.status(404).json({
+        message: "Address not found",
+      });
+    }
+
+    // 3️⃣ Remove default from all addresses
+    user.address.forEach(addr => {
+      addr.isDefault = false;
+    });
+
+    // 4️⃣ Set selected address as default
+    address.isDefault = true;
+
+    // 5️⃣ Save user
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Default address updated successfully",
+      address,
+    });
+
+  } catch (error) {
+    console.error("Set default address error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
