@@ -43,6 +43,18 @@ const userSchema = new mongoose.Schema(
       default: "USER"
     },
 
+    electricianProfile: {
+      skills: [String],
+      experience: Number,
+      certificates: [String],
+      serviceArea: String,
+      hourlyRate: Number,
+      approved: {
+        type: Boolean,
+        default: false
+      },
+    },
+
     address: [addressSchema],
   },
 
