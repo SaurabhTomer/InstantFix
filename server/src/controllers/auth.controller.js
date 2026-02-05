@@ -188,11 +188,11 @@ export const sendOTP = async (req, res) => {
 
     // generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(otp);
+    // console.log(otp);
 
-    const redisKey = `send_otp:${email}`;
+     const rediskey = `resend_otp:${email}`;
     await redis.set(
-      redisKey,
+      rediskey,
       otp,
       "EX",
       1 * 60
@@ -371,65 +371,6 @@ export const resetPassword = async (req, res) => {
 
 
 
-// CHANGE PASSWORD (Profile Section)
-export const changePassword = async (req, res) => {
-  try {
-    const userId = req.user.userId; // from auth middleware
-    const { oldPassword, newPassword } = req.body;
-
-    // 1. Validate input
-    if (!oldPassword || !newPassword) {
-      return res.status(400).json({
-        message: "Old password and new password are required",
-      });
-    }
-
-    if (newPassword.length < 8) {
-      return res.status(400).json({
-        message: "New password must be at least 8 characters",
-      });
-    }
-
-    // 2. Get user from DB
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-
-    // 3. Compare old password
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-
-    if (!isMatch) {
-      return res.status(400).json({
-        message: "Old password is incorrect",
-      });
-    }
-
-    // 4. Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // 5. Update password
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
-
-    return res.status(200).json({
-      message: "Password changed successfully",
-    });
-
-  } catch (error) {
-    console.error("Change password error:", error);
-    return res.status(500).json({
-      message: "Internal server error",
-    });
-  }
-};
 
 
  
