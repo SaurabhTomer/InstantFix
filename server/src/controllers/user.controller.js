@@ -192,3 +192,41 @@ export const deleteAddress = async (req, res) => {
   }
 };
 
+//delete account of  user
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const token = req.cookies?.token;
+
+    // 1️⃣ Find user
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    // 2️⃣ Delete user account
+    await User.findByIdAndDelete(userId);
+
+    // 4️⃣ Clear cookie
+    res.clearCookie("token", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: false // true in production
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Account deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete account error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
