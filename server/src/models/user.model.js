@@ -1,15 +1,12 @@
 import mongoose from "mongoose";
 
 const addressSchema = new mongoose.Schema({
- 
+
+
   street: String,
   city: String,
   state: String,
   pincode: String,
-  location: {
-    lat: Number,
-    lng: Number
-  },
   isDefault: {
     type: Boolean,
     default: false
@@ -50,7 +47,7 @@ const userSchema = new mongoose.Schema(
   },
 
   { timestamps: true }
-  
+
 );
 
 export default mongoose.model("User", userSchema);
