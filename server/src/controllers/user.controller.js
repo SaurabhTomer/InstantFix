@@ -1,5 +1,7 @@
+import fs from "fs";
 import bcrypt from "bcrypt";
 import User from "../models/user.model.js";
+import cloudinary from "../utils/claudinary.js";
 
 // CHANGE PASSWORD (Profile Section)
 export const changePassword = async (req, res) => {
@@ -230,3 +232,63 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
+//update profile controller
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { name } = req.body;
+
+    let electricianProfile = null;
+    // if electricain data comes then we parse it in json otherwise it is in string type
+    if (req.body.electricianProfile) {
+      electricianProfile = JSON.parse(req.body.electricianProfile);
+    }
+
+    const file = req.file;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (name) user.name = name;
+
+    if (file) {
+      const uploadResult = await cloudinary.uploader.upload(file.path, {
+        folder: "instantfix/avatars",
+        resource_type: "image",
+      });
+
+      fs.unlinkSync(file.path);
+      user.avatar = uploadResult.secure_url;
+    }
+
+    if (electricianProfile) {
+      user.electricianProfile = {
+        ...user.electricianProfile,
+        ...electricianProfile,
+        approved: false   // need to re approve from admin
+      };
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar: user.avatar,
+        role: user.role,
+        electricianProfile: user.electricianProfile
+      },
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
