@@ -4,9 +4,12 @@ import { authMiddleware, authorizeRoles } from "../middlewares/auth.middleware.j
 
 
 import express from 'express'
+import { acceptRequest } from "../controllers/service.electrician.controller.js";
 
 const serviceRouter = express.Router();
 
+
+//create request
 serviceRouter.post(
   "/create",
   authMiddleware,
@@ -23,7 +26,7 @@ serviceRouter.get(
   getMyAllRequest
 );
 
-
+// get reuest by id
 serviceRouter.get(
   "/my-request/:requestId",
   authMiddleware,
@@ -31,11 +34,21 @@ serviceRouter.get(
   getMyRequestById
 );
 
+//cancel request from user end
 serviceRouter.patch(
   "/:requestId/cancel",
   authMiddleware,
   authorizeRoles("USER"),
   cancelServiceRequest
 );
+
+//elcetrician accpets request
+serviceRouter.patch(
+  "/electrician/request/:requestId/accept",
+  authMiddleware,
+  authorizeRoles("ELECTRICIAN"),
+  acceptRequest
+);
+
 
 export default serviceRouter;
