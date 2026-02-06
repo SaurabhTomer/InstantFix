@@ -1,5 +1,5 @@
 import upload from "../middlewares/multer.js"
-import { createServiceRequest, getMyAllRequest, getMyRequestById } from "../controllers/service.controller.js";
+import { cancelServiceRequest, createServiceRequest, getMyAllRequest, getMyRequestById } from "../controllers/service.controller.js";
 import { authMiddleware, authorizeRoles } from "../middlewares/auth.middleware.js";
 
 
@@ -29,6 +29,13 @@ serviceRouter.get(
   authMiddleware,
   authorizeRoles("USER"),
   getMyRequestById
+);
+
+serviceRouter.patch(
+  "/:requestId/cancel",
+  authMiddleware,
+  authorizeRoles("USER"),
+  cancelServiceRequest
 );
 
 export default serviceRouter;

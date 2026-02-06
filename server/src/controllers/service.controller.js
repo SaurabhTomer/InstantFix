@@ -168,3 +168,46 @@ export const getMyRequestById = async (req, res) => {
     });
   }
 };
+
+//cancel service request by user
+export const cancelServiceRequest = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {requestId} = req.params;
+
+    // 1️⃣ Find request owned by user
+    const request = await ServiceRequest.findOne({
+      _id: requestId,
+      customer: userId,
+    });
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    // 2️⃣ Allow cancel only if pending
+    if (request.status !== "pending") {
+      return res.status(400).json({
+        message: `Cannot cancel request in '${request.status}' state`,
+      });
+    }
+
+    // 3️⃣ Cancel request
+    request.status = "cancelled";
+    await request.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Request cancelled successfully",
+      request,
+    });
+
+  } catch (error) {
+    console.error("Cancel request error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
