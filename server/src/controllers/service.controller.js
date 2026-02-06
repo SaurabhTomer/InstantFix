@@ -134,3 +134,37 @@ export const getMyAllRequest = async (req, res) => {
     });
   }
 };
+
+
+// get one requst by id
+// USER: GET PARTICULAR REQUEST
+export const getMyRequestById = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { requestId } = req.params;
+
+    // 1️⃣ Find request that belongs to logged-in user
+    const request = await ServiceRequest.findOne({
+      _id: requestId,
+      customer: userId,
+    })
+      .populate("electrician", "name phone avatar");
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      request,
+    });
+
+  } catch (error) {
+    console.error("Get my request error:", error);
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
