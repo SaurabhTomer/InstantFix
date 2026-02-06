@@ -1,4 +1,5 @@
 import ServiceRequest from "../models/serviceRequest.model.js";
+import { getIO } from "../socket/socket.js";
 
 export const acceptRequest = async (req, res) => {
   try {
@@ -26,6 +27,14 @@ export const acceptRequest = async (req, res) => {
     request.status = "accepted";
 
     await request.save();
+
+    //real tie socket emit
+    const io = getIO();
+    io.to(request.customer.toString()).emit("REQUEST_STATUS_UPDATED" , {
+      requestId : request.id,
+      status : request.status,
+      electricianId : electricianId,
+    })
 
     return res.status(200).json({
       success: true,
