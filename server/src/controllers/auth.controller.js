@@ -32,7 +32,8 @@ export const signup = async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      role
+      role,
+      approvalStatus: role === "ELECTRICIAN" ? "pending" : "approved",
       // address is optional at signup
     });
 
@@ -89,6 +90,15 @@ export const login = async (req, res) => {
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
     }
+
+    if (
+      user.role === "ELECTRICIAN" &&
+      user.approvalStatus !== "approved"
+  ) {
+  return res.status(403).json({
+    msg: "Electrician account not approved by admin yet",
+  });
+}
 
     // 3️⃣ Compare password
     const isMatch = await bcrypt.compare(password, user.password);

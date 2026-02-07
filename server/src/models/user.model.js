@@ -57,6 +57,12 @@ const userSchema = new mongoose.Schema(
         default: false
       },
     },
+      // 👇 electrician approval status
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending", 
+    },
 
     address: [addressSchema],
   },
