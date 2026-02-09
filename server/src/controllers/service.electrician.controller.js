@@ -24,7 +24,11 @@ export const acceptRequest = async (req, res) => {
     //no one user can accpet infact at same time
     const request = await ServiceRequest.findOneAndUpdate(
       { _id: requestId, status: "pending" },
-      { electrician: electricianId, status: "accepted" },
+      {
+        electrician: electricianId,
+        status: "accepted",
+        rejectedBy: [],   // this clear rejectedBy array if request accepted
+      },
       { new: true }
     )
 
@@ -35,13 +39,23 @@ export const acceptRequest = async (req, res) => {
       });
     }
 
-    const io = getIO();
-    io.to(request.customer.toString()).emit("REQUEST_STATUS_UPDATED", {
-      requestId: request._id,
-      status: request.status,
-      electricianId,
+    // create notification
+    await Notification.create({
+      user: request.customer,
+      title: "Service Completed",
+      message: "Your service has been completed successfully.",
+      type: "REQUEST_COMPLETED",
     });
 
+    // realtime notify user
+    getIO()
+      .to(request.customer.toString())
+      .emit("REQUEST_STATUS_UPDATED", {
+        requestId: request._id,
+        status: "completed",
+        electricianId,
+      });
+      
     //send mail
     const customer = await User.findById(request.customer);
 
@@ -345,7 +359,7 @@ export const rejectRequest = async (req, res) => {
 
     //  reject ONLY for this electrician
     request.rejectedBy.push(electricianId);
-    rejectedAt: new Date();
+    request.rejectedAt = new Date();
     await request.save();
 
     return res.status(200).json({
@@ -385,13 +399,13 @@ export const startJob = async (req, res) => {
     await request.save();
 
     //  notify user
-    const socketId = getSocketId(request.customer.toString());
-    if (socketId) {
-      getIO().to(socketId).emit("REQUEST_STATUS_UPDATED", {
+    getIO()
+      .to(request.customer.toString())
+      .emit("REQUEST_STATUS_UPDATED", {
         requestId: request._id,
-        status: request.status,
+        status: "in-progress",
       });
-    }
+
 
     return res.status(200).json({
       success: true,

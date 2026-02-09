@@ -216,6 +216,16 @@ export const cancelServiceRequest = async (req, res) => {
     await request.save();
 
     if (request.electrician) {
+
+      // create notification
+      await Notification.create({
+        user: request.electrician,
+        title: "Request Cancelled",
+        message: "The user has cancelled the service request.",
+        type: "REQUEST_CANCELLED",
+      });
+
+      // realtime notify
       getIO()
         .to(request.electrician.toString())
         .emit("REQUEST_CANCELLED", {
