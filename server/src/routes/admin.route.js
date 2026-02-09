@@ -5,14 +5,34 @@ import { approveElectrician, getAllElectricians, getElectricianDetails, getPendi
 
 const adminRouter = express.Router();
 
+//approve elecetrician
+adminRouter.patch("/electrician/:electricianId/approve",
+  authMiddleware,
+  adminOnly,
+  approveElectrician);
 
-adminRouter.patch("/electrician/:electricianId/approve", authMiddleware , adminOnly , approveElectrician);
-adminRouter.patch("/electrician/:electricianId/reject", authMiddleware , adminOnly , rejectElectrician);
+  //reject electrician
+adminRouter.patch("/electrician/:electricianId/reject",
+  authMiddleware,
+  adminOnly,
+  rejectElectrician);
 
-adminRouter.get("/electricians/pending", authMiddleware, adminOnly, getPendingElectricians);
+  //get all pending request of electrican to approve
+adminRouter.get("/electricians/pending",
+  authMiddleware,
+  adminOnly,
+  getPendingElectricians);
 
-adminRouter.get("/electricians", authMiddleware, adminOnly, getAllElectricians);
+  //get all electricians
+adminRouter.get("/electricians",
+  authMiddleware,
+  adminOnly,
+  getAllElectricians);
 
-adminRouter.get("/electricians/:id", authMiddleware, adminOnly, getElectricianDetails);
+  // get a single electrician by id
+adminRouter.get("/electricians/:id",
+  authMiddleware,
+  adminOnly,
+  getElectricianDetails);
 
 export default adminRouter;
