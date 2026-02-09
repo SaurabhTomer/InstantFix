@@ -344,6 +344,7 @@ export const rejectRequest = async (req, res) => {
 
     //  reject ONLY for this electrician
     request.rejectedBy.push(electricianId);
+    rejectedAt: new Date();
     await request.save();
 
     return res.status(200).json({
@@ -353,6 +354,98 @@ export const rejectRequest = async (req, res) => {
 
   } catch (error) {
     console.error("Reject request error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+
+// start job (accepted -> in-progress)
+export const startJob = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+    const { requestId } = req.params;
+
+    const request = await ServiceRequest.findOne({
+      _id: requestId,
+      electrician: electricianId,
+      status: "accepted",
+    });
+
+    if (!request) {
+      return res.status(400).json({
+        message: "Request cannot be started",
+      });
+    }
+
+    request.status = "in-progress";
+    request.startedAt = new Date(); 
+    await request.save();
+
+    //  notify user
+    const socketId = getSocketId(request.customer.toString());
+    if (socketId) {
+      getIO().to(socketId).emit("REQUEST_STATUS_UPDATED", {
+        requestId: request._id,
+        status: request.status,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Job started successfully",
+      request,
+    });
+
+  } catch (error) {
+    console.error("Start job error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+
+// complete job (in-progress -> completed)
+export const completeJob = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+    const { requestId } = req.params;
+
+    const request = await ServiceRequest.findOne({
+      _id: requestId,
+      electrician: electricianId,
+      status: "in-progress",
+    });
+
+    if (!request) {
+      return res.status(400).json({
+        message: "Request cannot be completed",
+      });
+    }
+
+    request.status = "completed";
+    request.completedAt = new Date();
+    await request.save();
+
+    //  notify user
+    const socketId = getSocketId(request.customer.toString());
+    if (socketId) {
+      getIO().to(socketId).emit("REQUEST_STATUS_UPDATED", {
+        requestId: request._id,
+        status: request.status,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Job completed successfully",
+      request,
+    });
+
+  } catch (error) {
+    console.error("Complete job error:", error);
     res.status(500).json({
       message: "Internal server error",
     });

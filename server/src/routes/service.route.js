@@ -2,7 +2,7 @@ import upload from "../middlewares/multer.js"
 import { cancelServiceRequest, createServiceRequest, getMyAllRequest, getMyRequestById } from "../controllers/service.controller.js";
 import { authMiddleware, authorizeRoles } from "../middlewares/auth.middleware.js";
 import express from 'express'
-import { acceptRequest } from "../controllers/service.electrician.controller.js";
+import { acceptRequest, completeJob, startJob } from "../controllers/service.electrician.controller.js";
 
 const serviceRouter = express.Router();
 
@@ -12,7 +12,7 @@ serviceRouter.post(
   "/create",
   authMiddleware,
   authorizeRoles("USER"),
-  upload.array("images", 2), 
+  upload.array("images", 2),
   createServiceRequest
 );
 
@@ -49,6 +49,10 @@ serviceRouter.patch(
 );
 
 
+serviceRouter.patch("/requests/:requestId/start", authMiddleware,  authorizeRoles("ELECTRICIAN"), startJob);
+
+
+serviceRouter.patch("/requests/:requestId/complete", authMiddleware, authorizeRoles("ELECTRICIAN"), completeJob);
 
 
 

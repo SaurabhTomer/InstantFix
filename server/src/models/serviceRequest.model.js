@@ -49,6 +49,9 @@ const serviceRequestSchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    startedAt: Date,
+    completedAt: Date,
+    rejectedAt: Date,
 
     images: [String],
 
