@@ -1,3 +1,4 @@
+import Notification from "../models/notification.model.js";
 import ServiceRequest from "../models/serviceRequest.model.js";
 import User from '../models/user.model.js'
 import { getIO } from "../socket/socket.js";
@@ -428,6 +429,13 @@ export const completeJob = async (req, res) => {
     request.status = "completed";
     request.completedAt = new Date();
     await request.save();
+
+    await Notification.create({
+      user: request.customer,
+      title: "Service Completed",
+      message: "Your service has been completed successfully.",
+      type: "REQUEST_COMPLETED",
+    });
 
     // notify user
     getIO()

@@ -11,6 +11,7 @@ import { initSocket } from './src/socket/socket.js';
 import http from "http";
 import adminRouter from './src/routes/admin.route.js';
 import electricianRouter from './src/routes/electrician.route.js';
+import notificationRouter from './src/routes/notification.route.js';
 
 
 const app = express();
@@ -29,6 +30,7 @@ app.use("/api/user/address" , addressRouter)
 app.use("/api/service" , serviceRouter)
 app.use("/api/admin" , adminRouter)
 app.use("/api/electrician" , electricianRouter)
+app.use("/api/notifications" , notificationRouter)
 
 
 const server = http.createServer(app);
