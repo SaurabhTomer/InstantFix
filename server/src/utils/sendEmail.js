@@ -186,7 +186,7 @@ export const sendElectricianApprovedMail = async (email, name) => {
   });
 };
 
-export const sendElectricianRejectedMail = async (email, name, reason) => {
+export const sendElectricianRejectedMail = async (email, name) => {
   await mailer.sendMail({
     from: `"InstantFix Team" <${process.env.EMAIL_USER}>`,
     to: email,
@@ -206,12 +206,6 @@ export const sendElectricianRejectedMail = async (email, name, reason) => {
           After reviewing your application, we’re sorry to inform you that
           your electrician account could not be approved at this time.
         </p>
-
-        ${
-          reason
-            ? `<p><b>Reason:</b> ${reason}</p>`
-            : `<p>Unfortunately, your application did not meet our current approval criteria.</p>`
-        }
 
         <p>
           This decision does not prevent you from applying again in the future.
