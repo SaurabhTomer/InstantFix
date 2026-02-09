@@ -146,3 +146,88 @@ export const sendRequestCompletedMail = async (email, issueType) => {
     `,
   });
 };
+
+export const sendElectricianApprovedMail = async (email, name) => {
+  await mailer.sendMail({
+    from: `"InstantFix Team" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Your Electrician Account Has Been Approved 🎉",
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+        <h2 style="color: #2c7be5;">Welcome to InstantFix! ⚡</h2>
+
+        <p>Hi ${name || "there"},</p>
+
+        <p>
+          Great news! Your electrician account on <b>InstantFix</b> has been
+          <b>successfully approved</b>.
+        </p>
+
+        <p>
+          You can now log in to your account, set your availability, and start
+          accepting service requests from nearby customers.
+        </p>
+
+        <p>
+          We’re excited to have you on board and look forward to working with you.
+        </p>
+
+        <hr style="margin: 20px 0;" />
+
+        <p style="font-size: 12px; color: #777;">
+          If you have any questions or need help, feel free to contact our support team.
+        </p>
+
+        <p style="font-size: 12px; color: #777;">
+          © ${new Date().getFullYear()} InstantFix. All rights reserved.
+        </p>
+      </div>
+    `,
+  });
+};
+
+export const sendElectricianRejectedMail = async (email, name, reason) => {
+  await mailer.sendMail({
+    from: `"InstantFix Team" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: "Update on Your Electrician Application – InstantFix",
+    html: `
+      <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+        <h2 style="color: #dc3545;">Application Status Update</h2>
+
+        <p>Hi ${name || "there"},</p>
+
+        <p>
+          Thank you for your interest in becoming an electrician on
+          <b>InstantFix</b>.
+        </p>
+
+        <p>
+          After reviewing your application, we’re sorry to inform you that
+          your electrician account could not be approved at this time.
+        </p>
+
+        ${
+          reason
+            ? `<p><b>Reason:</b> ${reason}</p>`
+            : `<p>Unfortunately, your application did not meet our current approval criteria.</p>`
+        }
+
+        <p>
+          This decision does not prevent you from applying again in the future.
+          You may update your details and reapply when ready.
+        </p>
+
+        <hr style="margin: 20px 0;" />
+
+        <p style="font-size: 12px; color: #777;">
+          If you have questions, feel free to contact our support team.
+        </p>
+
+        <p style="font-size: 12px; color: #777;">
+          © ${new Date().getFullYear()} InstantFix. All rights reserved.
+        </p>
+      </div>
+    `,
+  });
+};

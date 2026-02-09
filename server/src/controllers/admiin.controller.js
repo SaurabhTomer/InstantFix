@@ -1,5 +1,6 @@
 import User from '../models/user.model.js'
 import { getIO } from '../socket/socket.js';
+import { sendElectricianApprovedMail, sendElectricianRejectedMail } from '../utils/sendEmail.js';
 
 //approve electrician 
 export const approveElectrician = async (req, res) => {
@@ -15,7 +16,7 @@ export const approveElectrician = async (req, res) => {
             });
         }
 
-        // 2️⃣ Check role
+        //  Check role
         if (electrician.role !== "ELECTRICIAN") {
             return res.status(400).json({
                 success: false,
@@ -23,7 +24,7 @@ export const approveElectrician = async (req, res) => {
             });
         }
 
-        // 3️⃣ Already approved?
+        //  Already approved?
         if (electrician.approvalStatus === "approved") {
             return res.status(400).json({
                 success: false,
@@ -47,6 +48,11 @@ export const approveElectrician = async (req, res) => {
         } catch (socketError) {
             console.log("Socket not connected, skipping emit");
         }
+
+        
+        
+        sendElectricianApprovedMail(electrician.email , electrician.name)
+              .catch(err => console.error("Electrician approve mail failed:", err.message));
 
         // Response
         return res.status(200).json({
@@ -117,6 +123,9 @@ export const rejectElectrician = async (req, res) => {
         } catch (socketError) {
             console.log("Socket not connected, skipping emit");
         }
+        
+        sendElectricianRejectedMail(electrician.email , electrician.name)
+              .catch(err => console.error("Reject electrician mail failed:", err.message));
 
         // Response
         return res.status(200).json({
