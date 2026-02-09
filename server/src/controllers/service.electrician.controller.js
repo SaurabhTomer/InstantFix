@@ -47,6 +47,14 @@ export const acceptRequest = async (req, res) => {
       type: "REQUEST_COMPLETED",
     });
 
+    
+    console.log("✅ REQUEST ACCEPTED:", {
+      requestId: request._id.toString(),
+      customer: request.customer.toString(),
+      electrician: electricianId,
+      status: request.status,
+    });
+
     // realtime notify user
     getIO()
       .to(request.customer.toString())
@@ -55,7 +63,12 @@ export const acceptRequest = async (req, res) => {
         status: "completed",
         electricianId,
       });
-      
+
+    console.log(
+      "🔔 Emitting REQUEST_STATUS_UPDATED to user:",
+      request.customer.toString()
+    );
+
     //send mail
     const customer = await User.findById(request.customer);
 
