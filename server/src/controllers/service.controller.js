@@ -4,94 +4,104 @@ import ServiceRequest from "../models/serviceRequest.model.js"
 
 //create request
 export const createServiceRequest = async (req, res) => {
-    try {
-        // addressID if user send already save adress
-        // address if user send address manualy like  new address
-        // save address like is we save this address or not
-        const userId = req.user.id;
-        const { issueType, description, addressId, address, saveAddress } = req.body;
+  try {
+    // addressID if user send already save adress
+    // address if user send address manualy like  new address
+    // save address like is we save this address or not
+    const userId = req.user.id;
+    const { issueType, description, addressId, address, saveAddress, coordinates } = req.body;
 
-        if (!issueType || !description) {
-            return res.status(400).json({
-                message: "Issue type and description are required"
-            });
-        }
-
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
-        }
-
-
-        let finalAddress;
-
-        //  agr already saved addressId di ho 
-        if (addressId) {
-            const savedAddress = user.address.id(addressId);
-
-            if (!savedAddress) {
-                return res.status(404).json({ message: "Address not found" });
-            }
-            //agr address mil gya toh final address mai save krdo
-            finalAddress = {
-                street: savedAddress.street,
-                city: savedAddress.city,
-                state: savedAddress.state,
-                pincode: savedAddress.pincode
-            };
-        }
-
-        //  direct address diya ho
-        else if (address) {
-            finalAddress = address;
-
-            if (saveAddress === true) {
-                user.address.push(address);
-                await user.save();
-            }
-        }
-
-        else {
-            return res.status(400).json({
-                message: "Address or addressId is required"
-            });
-        }
-
-        //uplaod images
-        let imageUrls = [];
-
-        if (req.files && req.files.length > 0) {
-            const uploadPromises = req.files.map(file =>
-                cloudinary.uploader.upload(file.path, {
-                    folder: "instantfix/services"
-                })
-            );
-
-            const results = await Promise.all(uploadPromises);
-
-            imageUrls = results.map(result => result.secure_url);
-        }
-        //create request
-        const serviceRequest = await ServiceRequest.create({
-            customer: userId,
-            issueType,
-            description,
-            address: finalAddress,
-            images: imageUrls
-        });
-
-        return res.status(201).json({
-            success: true,
-            message: "Service request created successfully",
-            data: serviceRequest
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            message: "Internal server error"
-        });
+    if (!issueType || !description) {
+      return res.status(400).json({
+        message: "Issue type and description are required"
+      });
     }
+
+    if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
+      return res.status(400).json({
+        message: "Location coordinates [longitude, latitude] are required"
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+
+    let finalAddress;
+
+    //  agr already saved addressId di ho 
+    if (addressId) {
+      const savedAddress = user.address.find(addr => addr._id.toString() === addressId);
+
+      if (!savedAddress) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+      //agr address mil gya toh final address mai save krdo
+      finalAddress = {
+        street: savedAddress.street,
+        city: savedAddress.city,
+        state: savedAddress.state,
+        pincode: savedAddress.pincode
+      };
+    }
+
+    //  direct address diya ho
+    else if (address && address.street && address.city && address.state && address.pincode) {
+      finalAddress = address;
+
+      if (saveAddress === "true") {
+        user.address.push(finalAddress);
+        await user.save();
+      }
+    }
+
+    else {
+      return res.status(400).json({
+        message: "Address or addressId is required"
+      });
+    }
+
+    //uplaod images
+    let imageUrls = [];
+
+  // In your createServiceRequest function, update the file upload part:
+if (req.files && req.files.length > 0) {
+  const uploadPromises = req.files.map(file => 
+    cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.buffer.toString('base64')}`, {
+      folder: "instantfix/services"
+    })
+  );
+ 
+  const results = await Promise.all(uploadPromises);
+  imageUrls = results.map(result => result.secure_url);
+}
+    //create request
+    const serviceRequest = await ServiceRequest.create({
+      customer: userId,
+      issueType,
+      description,
+      address: finalAddress,
+      location: {
+        type: "Point",
+        coordinates: coordinates
+      },
+      images: imageUrls
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Service request created successfully",
+      data: serviceRequest
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
 };
 
 //get all request
@@ -173,7 +183,7 @@ export const getMyRequestById = async (req, res) => {
 export const cancelServiceRequest = async (req, res) => {
   try {
     const userId = req.user.id;
-    const {requestId} = req.params;
+    const { requestId } = req.params;
 
     // 1️⃣ Find request owned by user
     const request = await ServiceRequest.findOne({

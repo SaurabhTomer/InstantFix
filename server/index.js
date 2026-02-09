@@ -9,6 +9,8 @@ import addressRouter from './src/routes/address.route.js';
 import serviceRouter from './src/routes/service.route.js';
 import { initSocket } from './src/socket/socket.js';
 import http from "http";
+import adminRouter from './src/routes/admin.route.js';
+import electricianRouter from './src/routes/electrician.route.js';
 
 
 const app = express();
@@ -25,6 +27,8 @@ app.use("/api/auth" , authRouter)
 app.use("/api/user" , userRouter)
 app.use("/api/user/address" , addressRouter)
 app.use("/api/service" , serviceRouter)
+app.use("/api/admin" , adminRouter)
+app.use("/api/electrician" , electricianRouter)
 
 
 const server = http.createServer(app);

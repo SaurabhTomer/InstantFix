@@ -1,8 +1,6 @@
 import upload from "../middlewares/multer.js"
 import { cancelServiceRequest, createServiceRequest, getMyAllRequest, getMyRequestById } from "../controllers/service.controller.js";
 import { authMiddleware, authorizeRoles } from "../middlewares/auth.middleware.js";
-
-
 import express from 'express'
 import { acceptRequest } from "../controllers/service.electrician.controller.js";
 
@@ -49,6 +47,9 @@ serviceRouter.patch(
   authorizeRoles("ELECTRICIAN"),
   acceptRequest
 );
+
+
+
 
 
 export default serviceRouter;

@@ -134,7 +134,8 @@ export const login = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        address: user.address
+        address: user.address,
+        approvalStatus: user.approvalStatus,
       }
     });
   } catch (error) {
@@ -165,8 +166,8 @@ export const Logout = async (req, res) => {
     // clear cookie if exists
     res.clearCookie("token", {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure: false,
+      sameSite: "lax",
     });
     // console.log(token);
 
@@ -201,7 +202,7 @@ export const sendOTP = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     // console.log(otp);
 
-     const rediskey = `resend_otp:${email}`;
+     const rediskey = `send_otp:${email}`;
     await redis.set(
       rediskey,
       otp,

@@ -25,3 +25,16 @@ export const sendOtpEmail = async (email, otp) => {
     throw error;
   }
 };
+
+export const sendRequestAcceptedMail = async (to, requestId) => {
+  await mailer.sendMail({
+    from: `"InstantFix" <${process.env.MAIL_USER}>`,
+    to,
+    subject: "Your service request is accepted",
+    html: `
+      <h3>Good news 🎉</h3>
+      <p>Your service request <b>${requestId}</b> has been accepted.</p>
+      <p>Our electrician will contact you shortly.</p>
+    `,
+  });
+};

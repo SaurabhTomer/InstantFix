@@ -45,6 +45,14 @@ const userSchema = new mongoose.Schema(
       enum: ["USER", "ELECTRICIAN", "ADMIN"],
       default: "USER"
     },
+    location: {
+  type: {
+    type: String,
+    enum: ["Point"],
+    default: "Point"
+  },
+  coordinates: [Number] // [longitude, latitude]
+},
 
     electricianProfile: {
       skills: [String],
@@ -52,12 +60,8 @@ const userSchema = new mongoose.Schema(
       certificates: [String],
       serviceArea: String,
       hourlyRate: Number,
-      approved: {
-        type: Boolean,
-        default: false
-      },
     },
-      // 👇 electrician approval status
+      //  electrician approval status
     approvalStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],

@@ -13,13 +13,7 @@ const serviceRequestSchema = new mongoose.Schema(
       ref: "User",
       default: null
     },
-    // this is used when user send data manualy like ne address while doing request
-    address: {
-      street: String,
-      city: String,
-      state: String,
-      pincode: String
-    },
+  
 
     issueType: {
       type: String,
@@ -31,6 +25,18 @@ const serviceRequestSchema = new mongoose.Schema(
       city: String,
       state: String,
       pincode: String
+    },
+
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point"
+      },
+      coordinates: {
+        type: [Number], // [longitude, latitude]
+        required: true
+      }
     },
 
     description: {
@@ -48,6 +54,12 @@ const serviceRequestSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+
+// In serviceRequest.model.js
+serviceRequestSchema.index({ location: "2dsphere" });
+serviceRequestSchema.index({ status: 1, location: "2dsphere" }); // Compound index
+
 
 const ServiceRequest = mongoose.model(
   "ServiceRequest",
