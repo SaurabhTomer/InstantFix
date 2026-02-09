@@ -1,7 +1,7 @@
 import ServiceRequest from "../models/serviceRequest.model.js";
 import User from '../models/user.model.js'
 import { getIO } from "../socket/socket.js";
-import { sendRequestAcceptedMail } from "../utils/sendEmail.js";
+import { sendRequestAcceptedMail, sendRequestCompletedMail } from "../utils/sendEmail.js";
 
 //accept request by electrician
 export const acceptRequest = async (req, res) => {
@@ -436,6 +436,11 @@ export const completeJob = async (req, res) => {
         requestId: request._id,
         status: "completed",
       });
+
+    const customer = await User.findById(request.customer);
+
+    sendRequestCompletedMail(customer.email, request.issueType)
+      .catch(err => console.error("Completed mail failed:", err.message));
 
 
     return res.status(200).json({
