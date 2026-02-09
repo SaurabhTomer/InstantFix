@@ -26,7 +26,7 @@ export const acceptRequest = async (req, res) => {
       { electrician: electricianId, status: "accepted" },
       { new: true }
     )
-    
+
 
     if (!request) {
       return res.status(400).json({
@@ -41,8 +41,8 @@ export const acceptRequest = async (req, res) => {
       electricianId,
     });
 
-  //send mail
-  const customer = await User.findById(request.customer);
+    //send mail
+    const customer = await User.findById(request.customer);
 
     sendRequestAcceptedMail(
       customer.email,
@@ -87,7 +87,7 @@ export const getNearbyRequests = async (req, res) => {
       return res.status(400).json({ message: "Electrician location not set" });
     }
 
-    // 🔥 CORRECT AGGREGATION
+    //  AGGREGATION
     const pipeline = [
       {
         $geoNear: {
@@ -98,7 +98,10 @@ export const getNearbyRequests = async (req, res) => {
           distanceField: "distance",
           maxDistance,
           spherical: true,
-          query: { status: "pending" }
+          query: {        // this filters pending and not show if this electrician rejected request
+            status: "pending",
+            rejectedBy: { $ne: electricianId } 
+          }
         }
       },
       { $skip: skip },
@@ -176,6 +179,182 @@ export const setElectricianLocation = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error"
+    });
+  }
+};
+
+//set availability of electrician
+export const setAvailability = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+    const { isAvailable } = req.body;
+
+    //type check
+    if (typeof isAvailable !== "boolean") {
+      return res.status(400).json({
+        message: "isAvailable must be true or false",
+      });
+    }
+
+    const electrician = await User.findById(electricianId);
+
+    if (!electrician) {
+      return res.status(404).json({
+        message: "Electrician not found",
+      });
+    }
+
+    if (electrician.role !== "electrician") {
+      return res.status(403).json({
+        message: "Only electrician can set availability",
+      });
+    }
+
+    if (electrician.approvalStatus !== "approved") {
+      return res.status(403).json({
+        message: "Electrician not approved by admin",
+      });
+    }
+
+    electrician.isAvailable = isAvailable;
+    electrician.lastActiveAt = new Date();
+    await electrician.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Electrician is now ${isAvailable ? "online" : "offline"}`,
+      isAvailable,
+    });
+
+  } catch (error) {
+    console.error("Set availability error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//get assigned request (electrician)
+export const getAssignedRequests = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // status should only be accepted or in in-progress
+    const filter = {
+      electrician: electricianId,
+      status: { $in: ["accepted", "in-progress"] },
+    };
+
+    // reuest have all request and total have number
+    const [requests, total] = await Promise.all([
+      ServiceRequest.find(filter)
+        .populate("customer", "name phone address")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      ServiceRequest.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      count: requests.length,
+      requests,
+    });
+
+  } catch (error) {
+    console.error("Get assigned requests error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+//get completed requests
+export const getCompletedRequests = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      electrician: electricianId,
+      status: "completed",
+    };
+
+    const [requests, total] = await Promise.all([
+      ServiceRequest.find(filter)
+        .populate("customer", "name phone address")
+        .sort({ completedAt: -1 }) // agar field hai
+        .skip(skip)
+        .limit(limit),
+
+      ServiceRequest.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      count: requests.length,
+      requests,
+    });
+
+  } catch (error) {
+    console.error("Get completed requests error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// reject request for a specific electrician
+export const rejectRequest = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+    const { requestId } = req.params;
+
+    const request = await ServiceRequest.findOne({
+      _id: requestId,
+      status: "pending",
+    });
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found or no longer available",
+      });
+    }
+
+    //  already rejected by this electrician
+    if (request.rejectedBy.includes(electricianId)) {
+      return res.status(400).json({
+        message: "You already rejected this request",
+      });
+    }
+
+    //  reject ONLY for this electrician
+    request.rejectedBy.push(electricianId);
+    await request.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Request rejected for you",
+    });
+
+  } catch (error) {
+    console.error("Reject request error:", error);
+    res.status(500).json({
+      message: "Internal server error",
     });
   }
 };

@@ -36,8 +36,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    avatar:{
-      type:String
+    avatar: {
+      type: String
     },
 
     role: {
@@ -46,13 +46,13 @@ const userSchema = new mongoose.Schema(
       default: "USER"
     },
     location: {
-  type: {
-    type: String,
-    enum: ["Point"],
-    default: "Point"
-  },
-  coordinates: [Number] // [longitude, latitude]
-},
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point"
+      },
+      coordinates: [Number] // [longitude, latitude]
+    },
 
     electricianProfile: {
       skills: [String],
@@ -61,11 +61,16 @@ const userSchema = new mongoose.Schema(
       serviceArea: String,
       hourlyRate: Number,
     },
-      //  electrician approval status
+    isAvailable: {
+  type: Boolean,
+  default: false
+},
+lastActiveAt: Date,
+    //  electrician approval status
     approvalStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
-      default: "pending", 
+      default: "pending",
     },
 
     address: [addressSchema],

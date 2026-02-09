@@ -13,7 +13,13 @@ const serviceRequestSchema = new mongoose.Schema(
       ref: "User",
       default: null
     },
-  
+    rejectedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+      }
+    ],
+
 
     issueType: {
       type: String,
@@ -48,7 +54,7 @@ const serviceRequestSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "accepted", "completed" , "cancelled"],
+      enum: ["pending", "accepted", "completed", "in-progress", "cancelled"],
       default: "pending"
     }
   },
@@ -58,7 +64,6 @@ const serviceRequestSchema = new mongoose.Schema(
 
 // In serviceRequest.model.js
 serviceRequestSchema.index({ location: "2dsphere" });
-serviceRequestSchema.index({ status: 1, location: "2dsphere" }); // Compound index
 
 
 const ServiceRequest = mongoose.model(

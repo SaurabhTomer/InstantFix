@@ -1,6 +1,6 @@
-import  express from 'express'
+import express from 'express'
 import { authMiddleware, authorizeRoles } from '../middlewares/auth.middleware.js';
-import { getNearbyRequests, setElectricianLocation } from '../controllers/service.electrician.controller.js';
+import { getAssignedRequests, getCompletedRequests, getNearbyRequests, setAvailability, setElectricianLocation } from '../controllers/service.electrician.controller.js';
 
 const electricianRouter = express.Router();
 
@@ -15,8 +15,26 @@ electricianRouter.patch(
 electricianRouter.get(
   "/nearby-requests",
   authMiddleware,
-   authorizeRoles("ELECTRICIAN"),
+  authorizeRoles("ELECTRICIAN"),
   getNearbyRequests
 );
+
+// set availability
+electricianRouter.patch("/availability",
+  authMiddleware,
+  authorizeRoles("ELECTRICIAN"),
+  setAvailability);
+
+//get all assigned request to a electrician(accepted , in progress)
+electricianRouter.get("/assigned-requests",
+  authMiddleware,
+  authorizeRoles("ELECTRICIAN"),
+  getAssignedRequests);
+
+  //get completed request
+electricianRouter.get("/completed-requests",
+  authMiddleware,
+  authorizeRoles("ELECTRICIAN"),
+  getCompletedRequests);
 
 export default electricianRouter;

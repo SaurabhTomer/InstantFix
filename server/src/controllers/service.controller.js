@@ -1,6 +1,7 @@
 import cloudinary from "../utils/claudinary.js";
 import User from '../models/user.model.js'
 import ServiceRequest from "../models/serviceRequest.model.js"
+import { getIO } from "../socket/socket.js";
 
 //create request
 export const createServiceRequest = async (req, res) => {
@@ -146,8 +147,7 @@ export const getMyAllRequest = async (req, res) => {
 };
 
 
-// get one requst by id
-// USER: GET PARTICULAR REQUEST
+// get one requst by id user
 export const getMyRequestById = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -185,7 +185,7 @@ export const cancelServiceRequest = async (req, res) => {
     const userId = req.user.id;
     const { requestId } = req.params;
 
-    // 1️⃣ Find request owned by user
+    //  Find request owned by user
     const request = await ServiceRequest.findOne({
       _id: requestId,
       customer: userId,
@@ -197,16 +197,35 @@ export const cancelServiceRequest = async (req, res) => {
       });
     }
 
-    // 2️⃣ Allow cancel only if pending
+       //  only owner can cancel
+    if (request.customer.toString() !== userId) {
+      return res.status(403).json({
+        message: "You are not allowed to cancel this request",
+      });
+    }
+
+    //  Allow cancel only if pending
     if (request.status !== "pending") {
       return res.status(400).json({
         message: `Cannot cancel request in '${request.status}' state`,
       });
     }
 
-    // 3️⃣ Cancel request
+    //  Cancel request
     request.status = "cancelled";
     await request.save();
+
+
+    //   //  notify electrician
+    // if (request.electrician) {
+    //   const socketId = getIO(request.electrician.toString());
+    //   if (socketId) {
+    //     getIO().to(socketId).emit("REQUEST_CANCELLED", {
+    //       requestId: request._id,
+    //       message: "User cancelled the request",
+    //     });
+    //   }
+    // }
 
     return res.status(200).json({
       success: true,
