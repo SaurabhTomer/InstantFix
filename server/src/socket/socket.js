@@ -11,15 +11,13 @@ export const initSocket = (server) => {
   // Attach socket.io to the HTTP server
   io = new Server(server, {
     cors: {
-      origin: "*", // allow all origins (change in production)
+      origin: "*", // allow all origins 
     },
   });
 
   // Listen for new socket connections
   io.on("connection", (socket) => {
     console.log("Socket connected:", socket.id);
-
-    
 
     /**
      * Custom event: join-room
@@ -32,15 +30,12 @@ export const initSocket = (server) => {
       
     });
 
-    /**
-     * Runs automatically when client disconnects
-     */
     socket.on("disconnect", () => {
       console.log("Socket disconnected:", socket.id);
     });
   });
 
-  // Return io instance (optional but useful)
+  // Return io instance 
   return io;
 };
 

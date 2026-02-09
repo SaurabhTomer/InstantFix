@@ -100,7 +100,7 @@ export const getNearbyRequests = async (req, res) => {
           spherical: true,
           query: {        // this filters pending and not show if this electrician rejected request
             status: "pending",
-            rejectedBy: { $ne: electricianId } 
+            rejectedBy: { $ne: electricianId }
           }
         }
       },
@@ -380,7 +380,7 @@ export const startJob = async (req, res) => {
     }
 
     request.status = "in-progress";
-    request.startedAt = new Date(); 
+    request.startedAt = new Date();
     await request.save();
 
     //  notify user
@@ -429,14 +429,14 @@ export const completeJob = async (req, res) => {
     request.completedAt = new Date();
     await request.save();
 
-    //  notify user
-    const socketId = getSocketId(request.customer.toString());
-    if (socketId) {
-      getIO().to(socketId).emit("REQUEST_STATUS_UPDATED", {
+    // notify user
+    getIO()
+      .to(request.customer.toString())
+      .emit("REQUEST_STATUS_UPDATED", {
         requestId: request._id,
-        status: request.status,
+        status: "completed",
       });
-    }
+
 
     return res.status(200).json({
       success: true,

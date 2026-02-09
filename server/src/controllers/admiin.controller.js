@@ -4,9 +4,9 @@ import { getIO } from '../socket/socket.js';
 //approve electrician 
 export const approveElectrician = async (req, res) => {
     try {
-        const { requestId } = req.params; // electrician id (admin approve karega)
+        const { electricianId } = req.params; // electrician id (admin approve karega)
 
-        const electrician = await User.findById(requestId);
+        const electrician = await User.findById(electricianId);
 
         if (!electrician) {
             return res.status(404).json({
@@ -74,9 +74,9 @@ export const approveElectrician = async (req, res) => {
 //reject electrician
 export const rejectElectrician = async (req, res) => {
     try {
-        const { requestId } = req.params; // electrician id (admin approve karega)
+        const { electricianId } = req.params; // electrician id (admin approve karega)
 
-        const electrician = await User.findById(requestId);
+        const electrician = await User.findById(electricianId);
 
         if (!electrician) {
             return res.status(404).json({
@@ -139,3 +139,133 @@ export const rejectElectrician = async (req, res) => {
 
     }
 }
+
+// get all pending electricians
+export const getPendingElectricians = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const filter = {
+      role: "electrician",
+      approvalStatus: "pending",
+    };
+
+    const [electricians, total] = await Promise.all([
+      User.find(filter)
+        .select("-password") // security
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      User.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      count: electricians.length,
+      electricians,
+    });
+
+  } catch (error) {
+    console.error("Get pending electricians error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// get all electricians (admin)
+export const getAllElectricians = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    //  filter for   pending | approved | rejected
+    const approvalStatus = req.query.status; 
+    // pending | approved | rejected
+
+    const filter = {
+      role: "ELECTRICIAN",
+    };
+
+    if (approvalStatus) {
+      filter.approvalStatus = approvalStatus;
+    }
+
+    const [electricians, total] = await Promise.all([
+      User.find(filter)
+        .select("-password") //  never send password
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      User.countDocuments(filter),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      count: electricians.length,
+      electricians,
+    });
+
+  } catch (error) {
+    console.error("Get all electricians error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+
+// get electrician full details (admin)
+export const getElectricianDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const electrician = await User.findOne({
+      _id: id,
+      role: "ELECTRICIAN",
+    }).select("-password");
+
+    if (!electrician) {
+      return res.status(404).json({
+        message: "Electrician not found",
+      });
+    }
+
+    // optional stats (admin view)
+    const [totalRequests, completedRequests] = await Promise.all([
+      ServiceRequest.countDocuments({ electrician: id }),
+      ServiceRequest.countDocuments({
+        electrician: id,
+        status: "completed",
+      }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      electrician,
+      stats: {
+        totalRequests,
+        completedRequests,
+      },
+    });
+
+  } catch (error) {
+    console.error("Get electrician details error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};

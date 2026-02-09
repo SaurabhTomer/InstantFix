@@ -65,7 +65,7 @@ const serviceRequestSchema = new mongoose.Schema(
 );
 
 
-// In serviceRequest.model.js
+
 serviceRequestSchema.index({ location: "2dsphere" });
 
 

@@ -67,17 +67,17 @@ export const createServiceRequest = async (req, res) => {
     //uplaod images
     let imageUrls = [];
 
-  // In your createServiceRequest function, update the file upload part:
-if (req.files && req.files.length > 0) {
-  const uploadPromises = req.files.map(file => 
-    cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.buffer.toString('base64')}`, {
-      folder: "instantfix/services"
-    })
-  );
- 
-  const results = await Promise.all(uploadPromises);
-  imageUrls = results.map(result => result.secure_url);
-}
+    // In your createServiceRequest function, update the file upload part:
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(file =>
+        cloudinary.uploader.upload(`data:${file.mimetype};base64,${file.buffer.toString('base64')}`, {
+          folder: "instantfix/services"
+        })
+      );
+
+      const results = await Promise.all(uploadPromises);
+      imageUrls = results.map(result => result.secure_url);
+    }
     //create request
     const serviceRequest = await ServiceRequest.create({
       customer: userId,
@@ -197,7 +197,7 @@ export const cancelServiceRequest = async (req, res) => {
       });
     }
 
-       //  only owner can cancel
+    //  only owner can cancel
     if (request.customer.toString() !== userId) {
       return res.status(403).json({
         message: "You are not allowed to cancel this request",
@@ -215,17 +215,15 @@ export const cancelServiceRequest = async (req, res) => {
     request.status = "cancelled";
     await request.save();
 
+    if (request.electrician) {
+      getIO()
+        .to(request.electrician.toString())
+        .emit("REQUEST_CANCELLED", {
+          requestId: request._id,
+          message: "User cancelled the request",
+        });
+    }
 
-    //   //  notify electrician
-    // if (request.electrician) {
-    //   const socketId = getIO(request.electrician.toString());
-    //   if (socketId) {
-    //     getIO().to(socketId).emit("REQUEST_CANCELLED", {
-    //       requestId: request._id,
-    //       message: "User cancelled the request",
-    //     });
-    //   }
-    // }
 
     return res.status(200).json({
       success: true,
