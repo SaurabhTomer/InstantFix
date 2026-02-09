@@ -1,6 +1,7 @@
 import express from 'express'
 import { authMiddleware, authorizeRoles } from '../middlewares/auth.middleware.js';
 import { getAssignedRequests, getCompletedRequests, getNearbyRequests, setAvailability, setElectricianLocation } from '../controllers/service.electrician.controller.js';
+import { getElectricianRatings } from '../controllers/rating.controller.js';
 
 const electricianRouter = express.Router();
 
@@ -36,5 +37,10 @@ electricianRouter.get("/completed-requests",
   authMiddleware,
   authorizeRoles("ELECTRICIAN"),
   getCompletedRequests);
+
+// get all rating of electricians  public route
+electricianRouter.get("/:electricianId/ratings" ,
+    getElectricianRatings
+  )
 
 export default electricianRouter;

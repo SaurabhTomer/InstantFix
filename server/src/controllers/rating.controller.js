@@ -69,3 +69,49 @@ export const createRating = async (req, res) => {
     });
   }
 };
+
+
+// get electrician rating
+export const getElectricianRatings = async (req, res) => {
+  try {
+    const { electricianId } = req.params;
+
+    // electrician exists
+    const electrician = await User.findById(electricianId);
+    if (!electrician || electrician.role !== "electrician") {
+      return res.status(404).json({
+        message: "Electrician not found",
+      });
+    }
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [ratings, total] = await Promise.all([
+      Rating.find({ electrician: electricianId })
+        .populate("user", "name") // reviewer name 
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+
+      Rating.countDocuments({ electrician: electricianId }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      count: ratings.length,
+      ratings,
+    });
+
+  } catch (error) {
+    console.error("Get electrician ratings error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};

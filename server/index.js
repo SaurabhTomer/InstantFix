@@ -12,6 +12,7 @@ import http from "http";
 import adminRouter from './src/routes/admin.route.js';
 import electricianRouter from './src/routes/electrician.route.js';
 import notificationRouter from './src/routes/notification.route.js';
+import ratingRouter from './src/routes/rating.route.js';
 
 
 const app = express();
@@ -31,6 +32,7 @@ app.use("/api/service" , serviceRouter)
 app.use("/api/admin" , adminRouter)
 app.use("/api/electrician" , electricianRouter)
 app.use("/api/notifications" , notificationRouter)
+app.use("/api/ratings" , ratingRouter)
 
 
 const server = http.createServer(app);
