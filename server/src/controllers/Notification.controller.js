@@ -70,7 +70,7 @@ export const markNotificationAsRead = async (req, res) => {
 };
 
 
-//delete notication
+//delete all notication
 export const deleteNotification = async (req, res) => {
   try {
     const userId = req.user.id;
