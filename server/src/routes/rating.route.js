@@ -1,6 +1,6 @@
 import  express from 'express'
-import { authMiddleware } from '../middlewares/auth.middleware.js';
-import { createRating, getElectricianRatings } from '../controllers/rating.controller.js';
+import { authMiddleware, authorizeRoles } from '../middlewares/auth.middleware.js';
+import { createRating, deleteRating, updateRating } from '../controllers/rating.controller.js';
 
 
 const ratingRouter = express.Router();
@@ -13,6 +13,11 @@ ratingRouter.post(
   createRating
 );
 
+// update a rating
+ratingRouter.patch("/:ratingId", authMiddleware,authorizeRoles("USER") ,updateRating);
+
+//delete a rating
+ratingRouter.delete("/:ratingId", authMiddleware , authorizeRoles("USER"), deleteRating);
 
 
 export default ratingRouter;

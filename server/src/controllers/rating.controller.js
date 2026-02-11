@@ -171,3 +171,35 @@ export const updateRating = async (req, res, next) => {
     });
   }
 };
+
+
+//delete rating 
+export const deleteRating = async (req, res, next) => {
+  try {
+    const { ratingId } = req.params;
+
+    //  Find rating by id 
+    const rating = await Rating.findOne({
+      _id: ratingId,
+      user: req.user.id,
+    });
+
+    if (!rating) {
+      return res.status(404).json({
+        success: false,
+        message: "Rating not found or not authorized",
+      });
+    }
+
+    //  Delete rating
+    await rating.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Rating deleted successfully",
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
