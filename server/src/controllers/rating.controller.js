@@ -1,6 +1,6 @@
 import Rating from "../models/rating.model.js";
 import ServiceRequest from "../models/serviceRequest.model.js";
-import User from '../models/rating.model.js'
+import User from '../models/user.model.js'
 
 //create rating 
 export const createRating = async (req, res) => {
@@ -110,6 +110,62 @@ export const getElectricianRatings = async (req, res) => {
 
   } catch (error) {
     console.error("Get electrician ratings error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
+// update existing rating
+export const updateRating = async (req, res, next) => {
+  try {
+    const { ratingId } = req.params;
+    const { rating, review } = req.body;
+
+    // Rating exist check
+    const existingRating = await Rating.findById(ratingId);
+
+    if (!existingRating) {
+      return res.status(404).json({
+        success: false,
+        message: "Rating not found",
+      });
+    }
+
+    //  Ownership check 
+    if (existingRating.user.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this rating",
+      });
+    }
+
+    //  Rating validation 
+    if (rating !== undefined) {
+      if (rating < 1 || rating > 5) {
+        return res.status(400).json({
+          success: false,
+          message: "Rating must be between 1 and 5",
+        });
+      }
+      existingRating.rating = rating;
+    }
+
+    //  Review update
+    if (review !== undefined) {
+      existingRating.review = review;
+    }
+
+    const updatedRating = await existingRating.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Rating updated successfully",
+      data: updatedRating,
+    });
+
+  } catch (error) {
+      console.error("Update  ratings error:", error);
     res.status(500).json({
       message: "Internal server error",
     });
