@@ -126,6 +126,7 @@ export const getNearbyRequests = async (req, res) => {
           distanceField: "distance",
           maxDistance,
           spherical: true,
+          key: "location",  // use this to use a particular index
           query: {        // this filters pending and not show if this electrician rejected request
             status: "pending",
             rejectedBy: { $ne: electricianId }
