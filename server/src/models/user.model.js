@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 
 const addressSchema = new mongoose.Schema({
-
-
   street: String,
   city: String,
   state: String,
@@ -28,17 +26,29 @@ const userSchema = new mongoose.Schema(
 
     phone: {
       type: String,
-      required: true,
-      unique: true
+      unique: true,
+      sparse: true   // 🔥 important for google users
     },
 
     password: {
       type: String,
-      required: true
+      required: function () {
+        return this.authProvider === "local";
+      }
     },
-    avatar: {
-      type: String
+
+    authProvider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local"
     },
+
+    googleId: {
+      type: String,
+      sparse: true
+    },
+
+    avatar: String,
 
     role: {
       type: String,
@@ -52,9 +62,8 @@ const userSchema = new mongoose.Schema(
         enum: ["Point"],
         default: "Point"
       },
-      coordinates: [Number] // [longitude, latitude]
+      coordinates: [Number]
     },
-
 
     electricianProfile: {
       skills: [String],
@@ -70,7 +79,7 @@ const userSchema = new mongoose.Schema(
     },
 
     lastActiveAt: Date,
-    
+
     averageRating: {
       type: Number,
       default: 0,
@@ -80,7 +89,7 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    //  electrician approval status
+
     approvalStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -89,9 +98,7 @@ const userSchema = new mongoose.Schema(
 
     address: [addressSchema],
   },
-
   { timestamps: true }
-
 );
 
 export default mongoose.model("User", userSchema);
