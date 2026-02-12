@@ -1,124 +1,8 @@
-import dotenv from "dotenv"
-dotenv.config()
-
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import redis from "../config/redis.js";
 import { sendOtpEmail } from "../utils/sendEmail.js";
-import {OAuth2Client} from 'google-auth-library'
-
-// google client id
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-export const googleLogin = async (req, res) => {
-  try {
-    const { idToken } = req.body;
-
-    //  Validate
-    if (!idToken) {
-      return res.status(400).json({
-        success: false,
-        msg: "Google ID token is required",
-      });
-    }
-
-    //  Verify Google Token
-    const ticket = await client.verifyIdToken({
-      idToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-
-    const {
-      sub: googleId,
-      email,
-      name,
-      picture,
-      email_verified,
-    } = payload;
-
-    if (!email_verified) {
-      return res.status(400).json({
-        success: false,
-        msg: "Google email not verified",
-      });
-    }
-
-    // Check if user exists
-    let user = await User.findOne({ email });
-
-    if (user) {
-
-      //  Block electrician login via Google
-      if (user.role === "ELECTRICIAN") {
-        return res.status(403).json({
-          success: false,
-          msg: "Electricians must login using email/password",
-        });
-      }
-
-      //  Link Google account if not already linked
-      if (!user.googleId) {
-        user.googleId = googleId;
-        user.authProvider = "google";
-        user.avatar = picture;
-        await user.save();
-      }
-
-    } else {
-      //  Create new USER only
-      user = await User.create({
-        name,
-        email,
-        googleId,
-        authProvider: "google",
-        avatar: picture,
-        role: "USER",
-      });
-    }
-
-    //  Generate JWT
-    const token = jwt.sign(
-      {
-        id: user._id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    //   Set cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false, // true in production (HTTPS)
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    //  Response
-    return res.status(200).json({
-      success: true,
-      msg: "Google login successful",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-      },
-    });
-
-  } catch (error) {
-    console.error("Google Auth Error:", error);
-    return res.status(500).json({
-      success: false,
-      msg: "Google authentication failed",
-    });
-  }
-};
-
 
 //signup
 export const signup = async (req, res) => {
@@ -189,45 +73,36 @@ export const signup = async (req, res) => {
   }
 };
 
-
-// login
+//login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     //  Validation
-    if (!email || !password) {
+    if (!email  || !password) {
       return res
         .status(400)
-        .json({ msg: "Email and password are required" });
+        .json({ msg: "Email/Phone and password are required" });
     }
 
     //  Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({email});
 
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
     }
 
-    //  Block Google users from password login
-    if (user.authProvider === "google") {
-      return res.status(400).json({
-        msg: "This account is registered with Google. Please login using Google."
-      });
-    }
-
-    //  Electrician approval check
     if (
       user.role === "ELECTRICIAN" &&
       user.approvalStatus !== "approved"
-    ) {
-      return res.status(403).json({
-        msg: "Electrician account not approved by admin yet",
-      });
-    }
+  ) {
+  return res.status(403).json({
+    msg: "Electrician account not approved by admin yet",
+  });
+}
 
     //  Compare password
-    const isMatch =  bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ msg: "Invalid credentials" });
     }
@@ -263,7 +138,6 @@ export const login = async (req, res) => {
         approvalStatus: user.approvalStatus,
       }
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: "Server error" });
