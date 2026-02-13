@@ -13,6 +13,7 @@ import adminRouter from './src/routes/admin.route.js';
 import electricianRouter from './src/routes/electrician.route.js';
 import notificationRouter from './src/routes/notification.route.js';
 import ratingRouter from './src/routes/rating.route.js';
+import cors from 'cors'
 
 
 const app = express();
@@ -21,6 +22,11 @@ const port = process.env.PORT || 3000
 
 app.use(cookieParser());
 app.use(express.json())
+app.use(cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true
+}));
+
 
 connectDB();
 

@@ -65,7 +65,7 @@ export const getMe = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const user = await User.findById(userId).select("-password");
+    const user = await User.findById(userId).select("-password -electricianProfile -averageRating -totalRatings");
 
     if (!user) {
       return res.status(404).json({
@@ -232,42 +232,65 @@ export const deleteAccount = async (req, res) => {
   }
 };
 
-//update profile controller
+//update profile
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const { name } = req.body;
 
     let electricianProfile = null;
-    // if electricain data comes then we parse it in json otherwise it is in string type
+
+    // Safely parse electricianProfile
     if (req.body.electricianProfile) {
-      electricianProfile = JSON.parse(req.body.electricianProfile);
+      try {
+        electricianProfile = JSON.parse(req.body.electricianProfile);
+      } catch (err) {
+        return res.status(400).json({
+          message: "Invalid electricianProfile format"
+        });
+      }
     }
 
-    const file = req.file;
-
+    
     const user = await User.findById(userId);
+  
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // ✅ 1. BASIC PROFILE UPDATE (ALL USERS)
     if (name) user.name = name;
 
-    if (file) {
-      const uploadResult = await cloudinary.uploader.upload(file.path, {
+    if (req.file) {
+      const uploadResult = await cloudinary.uploader.upload(req.file.path, {
         folder: "instantfix/avatars",
         resource_type: "image",
       });
 
-      fs.unlinkSync(file.path);
+      await fs.promises.unlink(req.file.path);
       user.avatar = uploadResult.secure_url;
     }
 
+    // ✅ 2. ELECTRICIAN PROFILE UPDATE (ONLY ELECTRICIAN)
     if (electricianProfile) {
+
+      if (user.role !== "ELECTRICIAN") {
+        return res.status(403).json({
+          message: "Only electricians can update electrician profile"
+        });
+      }
+
+      const { skills, experience, serviceAreas, certifications, hourlyRate } =
+        electricianProfile;
+
       user.electricianProfile = {
         ...user.electricianProfile,
-        ...electricianProfile,
-        approved: false   // need to re approve from admin
+        skills,
+        experience,
+        serviceAreas,
+        certifications,
+        hourlyRate,
+        approved: false, // re-approval required
       };
     }
 
@@ -276,15 +299,16 @@ export const updateProfile = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Profile updated successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        avatar: user.avatar,
-        role: user.role,
-        electricianProfile: user.electricianProfile
-      },
+      // user
+       user:{
+         name:user.name,
+         email:user.email,
+         phone:user.phone,
+         role:user.role,
+         avatar:user.avatar,
+        location:user.location,
+        electricianProfile:user.electricianProfile
+       }
     });
 
   } catch (error) {
@@ -292,3 +316,44 @@ export const updateProfile = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+//update coordiantes
+export const updateLocation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        message: "Latitude and Longitude required"
+      });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        location: {
+          type: "Point",
+          coordinates: [
+            Number(longitude), //  first longitude
+            Number(latitude)   // then latitude
+          ]
+        }
+      },
+      { new: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      location: updatedUser.location
+    });
+
+  } catch (error) {
+    console.error("Location update error:", error);
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
+
