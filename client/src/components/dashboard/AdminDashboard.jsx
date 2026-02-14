@@ -3,14 +3,12 @@ import { Routes, Route, Link, useParams } from "react-router-dom";
 import AdminNavbar from "../AdminNavbar";
 import AdminProfile from "../AdminProfile";
 import axios from "axios";
+import { useSelector } from "react-redux";
 
 const serverUrl = "http://localhost:3000/api";
 
 function AdminDashboard() {
-  const admin = {
-    name: "Admin User",
-    email: "admin@instantfix.com",
-  };
+  const admin = useSelector((state) => state.user.userData);
 
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState("");

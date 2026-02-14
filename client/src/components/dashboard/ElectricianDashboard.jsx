@@ -3,29 +3,14 @@ import { Routes, Route, Link, useParams } from "react-router-dom";
 import ElectricianNavbar from "../ElectricianNavbar";
 import ElectricianProfile from "../ElectricianProfile";
 import axios from "axios";
+import { useFetchUser } from "../../hooks/useFetchUser";
+import { useSelector } from "react-redux";
 
 const serverUrl = "http://localhost:3000/api";
 
 function ElectricianDashboard() {
-  const [me, setMe] = useState(null);
-  const [meLoading, setMeLoading] = useState(false);
-  const [meError, setMeError] = useState("");
-
-  useEffect(() => {
-    const fetchMe = async () => {
-      setMeLoading(true);
-      setMeError("");
-      try {
-        const res = await axios.get(`${serverUrl}/user/getme`, { withCredentials: true });
-        setMe(res.data?.user || null);
-      } catch (err) {
-        setMeError(err?.response?.data?.message || err?.response?.data?.msg || "Failed to load profile");
-      } finally {
-        setMeLoading(false);
-      }
-    };
-    fetchMe();
-  }, []);
+  const { loading: meLoading, error: meError } = useFetchUser();
+  const me = useSelector((state) => state.user.userData);
 
   const quickActions = [
     { title: "Available Jobs", desc: "Find nearby pending requests", icon: "📋", link: "/dashboard/electrician/jobs" },
@@ -140,18 +125,17 @@ function ElectricianDashboard() {
         setLoading(true);
         setError("");
         try {
-          const [nearbyRes, assignedRes, completedRes, meRes] = await Promise.all([
+          const [nearbyRes, assignedRes, completedRes] = await Promise.all([
             axios.get(`${serverUrl}/electrician/nearby-requests?limit=1&page=1`, { withCredentials: true }),
             axios.get(`${serverUrl}/electrician/assigned-requests?limit=1&page=1`, { withCredentials: true }),
             axios.get(`${serverUrl}/electrician/completed-requests?limit=1&page=1`, { withCredentials: true }),
-            axios.get(`${serverUrl}/user/getme`, { withCredentials: true }),
           ]);
 
           setCounts({
             nearby: nearbyRes.data?.count || nearbyRes.data?.data?.length || 0,
             assigned: assignedRes.data?.total || assignedRes.data?.requests?.length || 0,
             completed: completedRes.data?.total || completedRes.data?.requests?.length || 0,
-            available: meRes.data?.user?.isAvailable ? "Online" : "Offline",
+            available: me?.isAvailable ? "Online" : "Offline",
           });
         } catch (err) {
           setError(err?.response?.data?.message || "Failed to load stats");

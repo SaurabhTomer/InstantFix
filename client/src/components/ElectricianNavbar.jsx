@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useFetchUser } from "../hooks/useFetchUser";
+import { useSelector } from "react-redux";
 
 const serverUrl = "http://localhost:3000/api";
 
 function ElectricianNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const { } = useFetchUser();
+  const user = useSelector((state) => state.user.userData);
   
   const electrician = {
-    name: "Mike Wilson",
-    avatar: "MW"
+    name: user?.name || "Electrician",
+    avatar: user?.name ? user.name.charAt(0).toUpperCase() : "E"
   };
 
   const toggleMenu = () => {

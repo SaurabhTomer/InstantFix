@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useSelector } from "react-redux";
 
 const serverUrl = "http://localhost:3000/api";
 
 function UserNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const user = useSelector((state) => state.user.userData);
   
-  const user = {
-    name: "John Doe",
-    avatar: "JD"
+  const userData = {
+    name: user?.name || "User",
+    avatar: user?.name ? user.name.charAt(0).toUpperCase() : "U"
   };
 
   const toggleMenu = () => {
@@ -83,9 +85,9 @@ function UserNavbar() {
                 className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold">
-                  {user.avatar}
+                  {userData.avatar}
                 </div>
-                <span className="hidden md:block font-medium">{user.name}</span>
+                <span className="hidden md:block font-medium">{userData.name}</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>

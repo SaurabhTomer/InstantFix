@@ -3,18 +3,14 @@ import { Routes, Route, Link, useParams } from "react-router-dom";
 import UserNavbar from "../UserNavbar";
 import UserProfile from "../UserProfile";
 import axios from "axios";
+import { useSelector } from "react-redux";
+import { useFetchUser } from "../../hooks/useFetchUser";
 
 const serverUrl = "http://localhost:3000/api";
 
 function UserDashboard() {
-  const user = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 234 567 8900",
-    joinDate: "Jan 15, 2024",
-    totalRequests: 5,
-    completedRequests: 3
-  };
+  const {userData}=useSelector(state=>state.user)
+  const { loading: userLoading, error: userError } = useFetchUser();
 
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
@@ -321,7 +317,7 @@ function UserDashboard() {
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-yellow-500 text-white rounded-2xl p-8">
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}! 👋</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome back, {userData?.name || "User"}! 👋</h1>
         <p className="text-blue-100">Here's what's happening with your electrical services today.</p>
       </div>
 
