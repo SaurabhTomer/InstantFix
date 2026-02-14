@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 
 import redis from "../config/redis.js";
 
-import { sendOtpEmail } from "../utils/sendEmail.js";
+import { sendOtpEmail  , sendWelcomeEmail} from "../utils/sendEmail.js";
 
 
 
@@ -110,6 +110,10 @@ export const signup = async (req, res) => {
 
     });
 
+       sendWelcomeEmail(user.email, user.name)
+  .catch((err) => {
+    console.error("Email sending failed:", err.message);
+  });
 
 
     // 7️⃣ Send response
@@ -249,6 +253,7 @@ export const login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
 
     });
+
 
 
 

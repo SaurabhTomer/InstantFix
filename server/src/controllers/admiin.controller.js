@@ -1,4 +1,5 @@
 import User from '../models/user.model.js'
+import ServiceRequest from "../models/serviceRequest.model.js";
 import { getIO } from '../socket/socket.js';
 import { sendElectricianApprovedMail, sendElectricianRejectedMail } from '../utils/sendEmail.js';
 
@@ -157,7 +158,7 @@ export const getPendingElectricians = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = {
-      role: "electrician",
+      role: "ELECTRICIAN",
       approvalStatus: "pending",
     };
 

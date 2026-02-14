@@ -32,8 +32,10 @@ function Signup() {
       });
       // console.log(res);
       
-      if (res.data.user) {
-        navigate("/");
+      if (res.data.user.role === "USER") {
+        navigate("/dashboard/user");
+      }else{
+         navigate("/dashboard/electrician");
       }
     } catch (err) {
       setError(err?.response?.data?.msg || "Signup failed");

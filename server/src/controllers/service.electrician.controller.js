@@ -90,6 +90,52 @@ export const acceptRequest = async (req, res) => {
   }
 };
 
+// get a single request by id (electrician)
+export const getRequestDetails = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+    const { requestId } = req.params;
+
+    const electrician = await User.findById(electricianId).select("role approvalStatus");
+    if (!electrician) {
+      return res.status(404).json({ message: "Electrician not found" });
+    }
+
+    if (electrician.role !== "ELECTRICIAN") {
+      return res.status(403).json({ message: "Only electrician can access this" });
+    }
+
+    if (electrician.approvalStatus !== "approved") {
+      return res.status(403).json({ message: "Electrician not approved by admin" });
+    }
+
+    const request = await ServiceRequest.findById(requestId)
+      .populate("customer", "name phone address")
+      .populate("electrician", "name email phone");
+
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (request.status === "pending") {
+      if (request.rejectedBy?.map(String).includes(String(electricianId))) {
+        return res.status(403).json({ message: "You rejected this request" });
+      }
+
+      return res.status(200).json({ success: true, request });
+    }
+
+    if (String(request.electrician?._id || request.electrician) !== String(electricianId)) {
+      return res.status(403).json({ message: "Not authorized for this request" });
+    }
+
+    return res.status(200).json({ success: true, request });
+  } catch (error) {
+    console.error("Get request details error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 //get nearby request 
 export const getNearbyRequests = async (req, res) => {
@@ -154,6 +200,7 @@ export const getNearbyRequests = async (req, res) => {
 };
 
 
+
 //set electriciann controller
 export const setElectricianLocation = async (req, res) => {
   try {
@@ -212,6 +259,7 @@ export const setElectricianLocation = async (req, res) => {
   }
 };
 
+
 //set availability of electrician
 export const setAvailability = async (req, res) => {
   try {
@@ -233,7 +281,7 @@ export const setAvailability = async (req, res) => {
       });
     }
 
-    if (electrician.role !== "electrician") {
+    if (electrician.role !== "ELECTRICIAN") {
       return res.status(403).json({
         message: "Only electrician can set availability",
       });

@@ -20,7 +20,19 @@ export const createServiceRequest = async (req, res) => {
 
     const userId = req.user.id;
 
-    const { issueType, description, addressId, address, saveAddress } = req.body;
+    const {
+      issueType,
+      description,
+      addressId,
+      address,
+      saveAddress,
+      street,
+      city,
+      state,
+      pincode,
+      latitude,
+      longitude,
+    } = req.body;
 
 
 
@@ -84,34 +96,31 @@ export const createServiceRequest = async (req, res) => {
 
 
 
-    //  direct address diya ho
-
-    else if (street && city && state && pincode) {
-
-      finalAddress = { street, area, city, district, state, country, pincode };
-
-
-
-      if (saveAddress === "true") {
-
-        user.address.push(finalAddress);
-
-        await user.save();
-
-      }
-
-    }
-
-
+    //  direct address diya ho (or nested address object)
 
     else {
+      const finalStreet = street || address?.street;
+      const finalCity = city || address?.city;
+      const finalState = state || address?.state;
+      const finalPincode = pincode || address?.pincode;
 
-      return res.status(400).json({
+      if (finalStreet && finalCity && finalState && finalPincode) {
+        finalAddress = {
+          street: finalStreet,
+          city: finalCity,
+          state: finalState,
+          pincode: finalPincode,
+        };
 
-        message: "Address or addressId is required"
-
-      });
-
+        if (saveAddress === "true" || saveAddress === true) {
+          user.address.push(finalAddress);
+          await user.save();
+        }
+      } else {
+        return res.status(400).json({
+          message: "Address or addressId is required",
+        });
+      }
     }
 
 
@@ -146,18 +155,29 @@ export const createServiceRequest = async (req, res) => {
 
     //create request
 
+    const hasUserLocation =
+      Array.isArray(user.location?.coordinates) && user.location.coordinates.length === 2;
+
+    const lat = latitude ? Number(latitude) : null;
+    const lng = longitude ? Number(longitude) : null;
+
+    let finalCoordinates = [0, 0];
+    if (hasUserLocation) {
+      finalCoordinates = user.location.coordinates;
+    } else if (!Number.isNaN(lng) && !Number.isNaN(lat) && lng !== null && lat !== null) {
+      finalCoordinates = [lng, lat];
+    }
+
     const serviceRequest = await ServiceRequest.create({
-
       customer: userId,
-
       issueType,
-
       description,
-
       address: finalAddress,
-
+      location: {
+        type: "Point",
+        coordinates: finalCoordinates,
+      },
       images: imageUrls
-
     });
 
 

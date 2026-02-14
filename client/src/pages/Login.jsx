@@ -27,7 +27,14 @@ function Login() {
       console.log(res);
       
       if (res.data.user) {
-        navigate("/");
+        const role = res.data.user.role;
+        if (role === "ADMIN") {
+          navigate("/dashboard/admin");
+        } else if (role === "ELECTRICIAN") {
+          navigate("/dashboard/electrician");
+        } else {
+          navigate("/dashboard/user");
+        }
       }
     } catch (err) {
       setError(err?.response?.data?.msg || "Login failed");
