@@ -3,8 +3,12 @@ import { cancelServiceRequest, createServiceRequest, getMyAllRequest, getMyReque
 import { authMiddleware, authorizeRoles } from "../middlewares/auth.middleware.js";
 import express from 'express'
 import { acceptRequest, completeJob, startJob } from "../controllers/service.electrician.controller.js";
+import { apiLimiter, serviceCreationLimiter } from "../middlewares/rateLimiter.js";
 
 const serviceRouter = express.Router();
+
+serviceRouter.use(apiLimiter);
+
 
 
 //create request
@@ -13,6 +17,7 @@ serviceRouter.post(
   authMiddleware,
   authorizeRoles("USER"),
   upload.array("images", 2),
+  serviceCreationLimiter,
   createServiceRequest
 );
 

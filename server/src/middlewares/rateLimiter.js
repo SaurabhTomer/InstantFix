@@ -62,11 +62,24 @@ export const signupLimiter = rateLimit({
 export const apiLimiter = rateLimit({
     store: redisStore,
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // 10 requests per 15 minutes
+    max: 100, // 100 requests per 15 minutes
     keyGenerator: (req) => `api:${getIP(req) || 'unknown'}`,
     message: {
         success: false,
         message: "Too many requests. Please try again later."
+    },
+    standardHeaders: true
+});
+
+// Stricter limiter for service creation
+export const serviceCreationLimiter = rateLimit({
+    store: redisStore,
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // 5 service creations per hour
+    keyGenerator: (req) => `service_create:${getIP(req)}`,
+    message: {
+        success: false,
+        message: "Too many service creation attempts. Try again later."
     },
     standardHeaders: true
 });
