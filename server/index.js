@@ -26,6 +26,8 @@ app.use(cors({
     origin: process.env.CLIENT_URL,
     credentials: true
 }));
+// to get ip address from proxy
+app.set("trust proxy" , 1);
 
 
 connectDB();
