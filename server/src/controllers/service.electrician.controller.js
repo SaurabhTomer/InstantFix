@@ -136,8 +136,7 @@ export const getRequestDetails = async (req, res) => {
   }
 };
 
-
-//get nearby request 
+// get near by request
 export const getNearbyRequests = async (req, res) => {
   try {
     const electricianId = req.user.id;
@@ -146,7 +145,8 @@ export const getNearbyRequests = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const electrician = await User.findById(electricianId).select("approvalStatus location");
+    const electrician = await User.findById(electricianId)    //took approvalstatus location skill 
+      .select("approvalStatus location skills");
 
     if (!electrician) {
       return res.status(404).json({ message: "Electrician not found" });
@@ -161,10 +161,9 @@ export const getNearbyRequests = async (req, res) => {
       return res.status(400).json({ message: "Electrician location not set" });
     }
 
-    //  AGGREGATION
     const pipeline = [
       {
-        $geoNear: {
+        $geoNear: {     // near  by electrician
           near: {
             type: "Point",
             coordinates
@@ -172,13 +171,35 @@ export const getNearbyRequests = async (req, res) => {
           distanceField: "distance",
           maxDistance,
           spherical: true,
-          key: "location",  // use this to use a particular index
-          query: {        // this filters pending and not show if this electrician rejected request
+          key: "location",
+          query: {
             status: "pending",
             rejectedBy: { $ne: electricianId }
           }
         }
       },
+
+      // Skill Matching 
+      {
+        $addFields: {
+          skillScore: {
+            $cond: [
+              { $in: ["$issueType", electrician.skills] },
+              10,   // exact match
+              5     // fallback match
+            ]
+          }
+        }
+      },
+
+      // Sort by skillScore first, then distance
+      {
+        $sort: {
+          skillScore: -1,
+          distance: 1
+        }
+      },
+
       { $skip: skip },
       { $limit: limit }
     ];

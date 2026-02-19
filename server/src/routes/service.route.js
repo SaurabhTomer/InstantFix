@@ -7,8 +7,8 @@ import { apiLimiter, serviceCreationLimiter } from "../middlewares/rateLimiter.j
 
 const serviceRouter = express.Router();
 
+// Apply general rate limiter to all service routes
 serviceRouter.use(apiLimiter);
-
 
 
 //create request

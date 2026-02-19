@@ -2,10 +2,7 @@ import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
 import redisClient from "../config/redis.js";
 
-// Redis store setup
-const redisStore = new RedisStore({
-    sendCommand: (...args) => redisClient.call(...args),
-});
+
 
 // Helper function to get the correct IP address
 const getIP = (req) =>
@@ -17,9 +14,12 @@ const getIP = (req) =>
 
 // Login limiter
 export const loginLimiter = rateLimit({
-    store: redisStore,
+     store: new RedisStore({            //redis store
+    sendCommand: (...args) => redisClient.call(...args),
+    prefix: "login_rl:",
+  }),
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5,                       // 5 requests allowed
+    max: 10,                       // 5 requests allowed
     keyGenerator: (req) => {
         const ip = getIP(req);
         console.log(ip);
@@ -40,8 +40,12 @@ export const loginLimiter = rateLimit({
 
 // Signup limiter with Redis store
 export const signupLimiter = rateLimit({
+     store: new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+    prefix: "signup_rl:",
+  }),
     windowMs: 15 * 60 * 1000,
-    max: 3,
+    max: 10,
     keyGenerator: (req) => {
         const ip = getIP(req);
         if (!ip) {
@@ -60,7 +64,10 @@ export const signupLimiter = rateLimit({
  
 // General API limiter (less strict)
 export const apiLimiter = rateLimit({
-    store: redisStore,
+     store: new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+    prefix: "apiLimiter:",
+  }),
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // 100 requests per 15 minutes
     keyGenerator: (req) => `api:${getIP(req) || 'unknown'}`,
@@ -73,9 +80,12 @@ export const apiLimiter = rateLimit({
 
 // Stricter limiter for service creation
 export const serviceCreationLimiter = rateLimit({
-    store: redisStore,
+     store: new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+    prefix: "serviceCreationLimiter:",
+  }),
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 5, // 5 service creations per hour
+    max: 10, // 5 service creations per hour
     keyGenerator: (req) => `service_create:${getIP(req)}`,
     message: {
         success: false,

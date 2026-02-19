@@ -7,17 +7,8 @@ import ServiceRequest from "../models/serviceRequest.model.js"
 
 
 //create request
-
 export const createServiceRequest = async (req, res) => {
-
   try {
-
-    // addressID if user send already save adress
-
-    // address if user send address manualy like  new address
-
-    // save address like is we save this address or not
-
     const userId = req.user.id;
 
     const {
@@ -34,140 +25,106 @@ export const createServiceRequest = async (req, res) => {
       longitude,
     } = req.body;
 
+    console.log("BODY FULL:", req.body);
 
 
     if (!issueType || !description) {
-
       return res.status(400).json({
-
-        message: "Issue type and description are required"
-
+        message: "Issue type and description are required",
       });
-
     }
-
-
 
     const user = await User.findById(userId);
-
     if (!user) {
-
       return res.status(404).json({ message: "User not found" });
-
     }
 
-
-
-
-
+    // -------------------------
+    // ADDRESS LOGIC
+    // -------------------------
     let finalAddress;
 
-
-
-    //  agr already saved addressId di ho 
-
     if (addressId) {
-
       const savedAddress = user.address.id(addressId);
-
-
-
       if (!savedAddress) {
-
         return res.status(404).json({ message: "Address not found" });
-
       }
-
-      //agr address mil gya toh final address mai save krdo
 
       finalAddress = {
-
         street: savedAddress.street,
-
         city: savedAddress.city,
-
         state: savedAddress.state,
+        pincode: savedAddress.pincode,
+      };
+    } else {
+      const finalStreet = street ?? address?.street;
+      const finalCity = city ?? address?.city;
+      const finalState = state ?? address?.state;
+      const finalPincode = pincode ?? address?.pincode;
 
-        pincode: savedAddress.pincode
+      if (!finalStreet || !finalCity || !finalState || !finalPincode) {
+        return res.status(400).json({
+          message: "Complete address required",
+        });
+      }
 
+      finalAddress = {
+        street: finalStreet,
+        city: finalCity,
+        state: finalState,
+        pincode: finalPincode,
       };
 
-    }
-
-
-
-    //  direct address diya ho (or nested address object)
-
-    else {
-      const finalStreet = street || address?.street;
-      const finalCity = city || address?.city;
-      const finalState = state || address?.state;
-      const finalPincode = pincode || address?.pincode;
-
-      if (finalStreet && finalCity && finalState && finalPincode) {
-        finalAddress = {
-          street: finalStreet,
-          city: finalCity,
-          state: finalState,
-          pincode: finalPincode,
-        };
-
-        if (saveAddress === "true" || saveAddress === true) {
-          user.address.push(finalAddress);
-          await user.save();
-        }
-      } else {
-        return res.status(400).json({
-          message: "Address or addressId is required",
-        });
+      if (saveAddress == true) {
+        user.address.push(finalAddress);
+        await user.save();
       }
     }
 
-
-
-    //uplaod images
-
+    // -------------------------
+    // IMAGE UPLOAD
+    // -------------------------
     let imageUrls = [];
 
-
-
     if (req.files && req.files.length > 0) {
-
-      const uploadPromises = req.files.map(file =>
-
+      const uploadPromises = req.files.map((file) =>
         cloudinary.uploader.upload(file.path, {
-
-          folder: "instantfix/services"
-
+          folder: "instantfix/services",
         })
-
       );
 
-
-
       const results = await Promise.all(uploadPromises);
-
-
-
-      imageUrls = results.map(result => result.secure_url);
-
+      imageUrls = results.map((result) => result.secure_url);
     }
 
-    //create request
+    // -------------------------
+    // COORDINATES LOGIC (FIXED)
+    // -------------------------
+    const lat = Number(req.body.latitude);
+    const lng = Number(req.body.longitude);
+    console.log(lat , lng);
 
-    const hasUserLocation =
-      Array.isArray(user.location?.coordinates) && user.location.coordinates.length === 2;
+    let finalCoordinates = null;
 
-    const lat = latitude ? Number(latitude) : null;
-    const lng = longitude ? Number(longitude) : null;
-
-    let finalCoordinates = [0, 0];
-    if (hasUserLocation) {
-      finalCoordinates = user.location.coordinates;
-    } else if (!Number.isNaN(lng) && !Number.isNaN(lat) && lng !== null && lat !== null) {
+    if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
       finalCoordinates = [lng, lat];
+    } else if (
+      Array.isArray(user.location?.coordinates) &&
+      user.location.coordinates.length === 2
+    ) {
+      finalCoordinates = user.location.coordinates;
     }
 
+    if (!finalCoordinates) {
+      return res.status(400).json({
+        message: "Valid latitude and longitude required",
+      });
+    }
+
+
+    // -------------------------
+    // CREATE SERVICE REQUEST
+    // -------------------------
     const serviceRequest = await ServiceRequest.create({
       customer: userId,
       issueType,
@@ -177,37 +134,21 @@ export const createServiceRequest = async (req, res) => {
         type: "Point",
         coordinates: finalCoordinates,
       },
-      images: imageUrls
+      images: imageUrls,
     });
-
-
 
     return res.status(201).json({
-
       success: true,
-
       message: "Service request created successfully",
-
-      data: serviceRequest
-
+      data: serviceRequest,
     });
-
-
-
   } catch (error) {
-
     console.error(error);
-
     return res.status(500).json({
-
-      message: "Internal server error"
-
+      message: "Internal server error",
     });
-
   }
-
 };
-
 
 
 //get all request

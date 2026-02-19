@@ -1,0 +1,25 @@
+services:
+  app:
+    build: .
+    container_name: instantfix-app
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CHOKIDAR_USEPOLLING: "true"
+
+  redis:
+    image: redis:latest
+    container_name: redisInstantfix
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
