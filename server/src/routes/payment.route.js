@@ -1,6 +1,6 @@
 import express from 'express'
-import { authMiddleware, authorizeRoles } from '../middlewares/auth.middleware';
-import { createOrder, razorpayWebhook } from '../controllers/payment.controller';
+import { authMiddleware, authorizeRoles } from '../middlewares/auth.middleware.js';
+import { createOrder, razorpayWebhook } from '../controllers/payment.controller.js';
 import { apiLimiter } from '../middlewares/rateLimiter.js';
 
 const paymentRouter = express.Router();

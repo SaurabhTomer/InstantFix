@@ -116,7 +116,6 @@ export const rejectElectrician = async (req, res) => {
         //  Real-time socket notify 
         try {
             const io = getIO();
-            // console.log("bn gya")
             io.to(electrician._id.toString()).emit("ELECTRICIAN_REJECTED", {
                 electricianId: electrician._id,
                 message: "Your account has been rejected by admin",
@@ -254,7 +253,7 @@ export const getElectricianDetails = async (req, res) => {
       });
     }
 
-    // optional stats (admin view)
+    // get total number of request which consist electrician
     const [totalRequests, completedRequests] = await Promise.all([
       ServiceRequest.countDocuments({ electrician: id }),
       ServiceRequest.countDocuments({
