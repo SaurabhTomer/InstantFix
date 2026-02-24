@@ -5,6 +5,7 @@ import {ToastContainer} from "react-toastify"
 import SignIn from './pages/SignIn';
 import ForgotPassword from './pages/ForgotPassword';
 import CreateRequest from './pages/CreateRequest';
+import Home from './pages/Home';
 import useGetLocation from './hook/UseGetLocation';
 
 // Server URL
@@ -28,6 +29,8 @@ const App = () => {
 
       <Routes>
         {/* <Route path='/' element={<SignUp />} /> */}
+        <Route path='/' element={<Home />} />
+        <Route path='/home' element={<Home />} />
         <Route path='/signup' element={<SignUp />} />
         <Route path='/signin' element={<SignIn />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
