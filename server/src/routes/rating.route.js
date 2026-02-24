@@ -5,7 +5,6 @@ import { createRating, deleteRating, updateRating } from '../controllers/rating.
 
 const ratingRouter = express.Router();
 
-
 // user rates a completed request
 ratingRouter.post(
   "/:requestId",

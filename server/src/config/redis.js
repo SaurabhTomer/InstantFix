@@ -4,7 +4,7 @@ import Redis from "ioredis";
 let redis = null;
 
 // Function to get or create Redis client
-const getRedisClient = () => {
+const RedisClient = () => {
 
   if (!redis) {
     
@@ -37,4 +37,4 @@ const getRedisClient = () => {
 };
 
 
-export default getRedisClient();
+export default RedisClient();

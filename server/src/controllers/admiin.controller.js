@@ -1,6 +1,8 @@
 import User from '../models/user.model.js'
+import ServiceRequest from "../models/serviceRequest.model.js";
 import { getIO } from '../socket/socket.js';
 import { sendElectricianApprovedMail, sendElectricianRejectedMail } from '../utils/sendEmail.js';
+import NotificationService from '../utils/notificationService.js';
 
 //approve electrician 
 export const approveElectrician = async (req, res) => {
@@ -36,6 +38,8 @@ export const approveElectrician = async (req, res) => {
         electrician.approvalStatus = "approved";
         await electrician.save();
 
+        // Create notification for electrician
+        await NotificationService.notifyElectricianApproved(electrician._id);
 
         //  Real-time socket notify 
         try {
@@ -111,11 +115,12 @@ export const rejectElectrician = async (req, res) => {
         electrician.approvalStatus = "rejected";
         await electrician.save();
 
+        // Create notification for electrician
+        await NotificationService.notifyElectricianRejected(electrician._id, "Your electrician account has been rejected by admin");
 
         //  Real-time socket notify 
         try {
             const io = getIO();
-            // console.log("bn gya")
             io.to(electrician._id.toString()).emit("ELECTRICIAN_REJECTED", {
                 electricianId: electrician._id,
                 message: "Your account has been rejected by admin",
@@ -157,7 +162,7 @@ export const getPendingElectricians = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const filter = {
-      role: "electrician",
+      role: "ELECTRICIAN",
       approvalStatus: "pending",
     };
 
@@ -253,7 +258,7 @@ export const getElectricianDetails = async (req, res) => {
       });
     }
 
-    // optional stats (admin view)
+    // get total number of request which consist electrician
     const [totalRequests, completedRequests] = await Promise.all([
       ServiceRequest.countDocuments({ electrician: id }),
       ServiceRequest.countDocuments({

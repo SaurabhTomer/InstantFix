@@ -1,4 +1,4 @@
-import Notification from "../models/notification.model.js";
+import NotificationService from "../utils/notificationService.js";
 import ServiceRequest from "../models/serviceRequest.model.js";
 import User from '../models/user.model.js'
 import { getIO } from "../socket/socket.js";
@@ -40,12 +40,7 @@ export const acceptRequest = async (req, res) => {
     }
 
     // create notification
-    await Notification.create({
-      user: request.customer,
-      title: "Service Completed",
-      message: "Your service has been completed successfully.",
-      type: "REQUEST_COMPLETED",
-    });
+    await NotificationService.notifyRequestAccepted(request.customer, electrician.name);
 
     
     console.log("✅ REQUEST ACCEPTED:", {
@@ -60,7 +55,7 @@ export const acceptRequest = async (req, res) => {
       .to(request.customer.toString())
       .emit("REQUEST_STATUS_UPDATED", {
         requestId: request._id,
-        status: "completed",
+        status: "accepted",
         electricianId,
       });
 
@@ -90,8 +85,53 @@ export const acceptRequest = async (req, res) => {
   }
 };
 
+// get a single request by id (electrician)
+export const getRequestDetails = async (req, res) => {
+  try {
+    const electricianId = req.user.id;
+    const { requestId } = req.params;
 
-//get nearby request 
+    const electrician = await User.findById(electricianId).select("role approvalStatus");
+    if (!electrician) {
+      return res.status(404).json({ message: "Electrician not found" });
+    }
+
+    if (electrician.role !== "ELECTRICIAN") {
+      return res.status(403).json({ message: "Only electrician can access this" });
+    }
+
+    if (electrician.approvalStatus !== "approved") {
+      return res.status(403).json({ message: "Electrician not approved by admin" });
+    }
+
+    const request = await ServiceRequest.findById(requestId)
+      .populate("customer", "name phone address")
+      .populate("electrician", "name email phone");
+
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+
+    if (request.status === "pending") {
+      if (request.rejectedBy?.map(String).includes(String(electricianId))) {
+        return res.status(403).json({ message: "You rejected this request" });
+      }
+
+      return res.status(200).json({ success: true, request });
+    }
+
+    if (String(request.electrician?._id || request.electrician) !== String(electricianId)) {
+      return res.status(403).json({ message: "Not authorized for this request" });
+    }
+
+    return res.status(200).json({ success: true, request });
+  } catch (error) {
+    console.error("Get request details error:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// get near by request
 export const getNearbyRequests = async (req, res) => {
   try {
     const electricianId = req.user.id;
@@ -100,7 +140,8 @@ export const getNearbyRequests = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const electrician = await User.findById(electricianId).select("approvalStatus location");
+    const electrician = await User.findById(electricianId)    //took approvalstatus location skill 
+      .select("approvalStatus location skills");
 
     if (!electrician) {
       return res.status(404).json({ message: "Electrician not found" });
@@ -115,10 +156,9 @@ export const getNearbyRequests = async (req, res) => {
       return res.status(400).json({ message: "Electrician location not set" });
     }
 
-    //  AGGREGATION
     const pipeline = [
       {
-        $geoNear: {
+        $geoNear: {     // near  by electrician
           near: {
             type: "Point",
             coordinates
@@ -126,13 +166,35 @@ export const getNearbyRequests = async (req, res) => {
           distanceField: "distance",
           maxDistance,
           spherical: true,
-          key: "location",  // use this to use a particular index
-          query: {        // this filters pending and not show if this electrician rejected request
+          key: "location",
+          query: {
             status: "pending",
             rejectedBy: { $ne: electricianId }
           }
         }
       },
+
+      // Skill Matching 
+      {
+        $addFields: {
+          skillScore: {
+            $cond: [
+              { $in: ["$issueType", electrician.skills] },
+              10,   // exact match
+              5     // fallback match
+            ]
+          }
+        }
+      },
+
+      // Sort by skillScore first, then distance
+      {
+        $sort: {
+          skillScore: -1,
+          distance: 1
+        }
+      },
+
       { $skip: skip },
       { $limit: limit }
     ];
@@ -152,6 +214,7 @@ export const getNearbyRequests = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 //set electriciann controller
@@ -212,6 +275,7 @@ export const setElectricianLocation = async (req, res) => {
   }
 };
 
+
 //set availability of electrician
 export const setAvailability = async (req, res) => {
   try {
@@ -233,7 +297,7 @@ export const setAvailability = async (req, res) => {
       });
     }
 
-    if (electrician.role !== "electrician") {
+    if (electrician.role !== "ELECTRICIAN") {
       return res.status(403).json({
         message: "Only electrician can set availability",
       });
@@ -412,6 +476,9 @@ export const startJob = async (req, res) => {
     request.startedAt = new Date();
     await request.save();
 
+    // create notification
+    await NotificationService.notifyRequestStarted(request.customer, electrician.name);
+
     //  notify user
     getIO()
       .to(request.customer.toString())
@@ -458,12 +525,8 @@ export const completeJob = async (req, res) => {
     request.completedAt = new Date();
     await request.save();
 
-    await Notification.create({
-      user: request.customer,
-      title: "Service Completed",
-      message: "Your service has been completed successfully.",
-      type: "REQUEST_COMPLETED",
-    });
+    // create notification
+    await NotificationService.notifyRequestCompleted(request.customer, electrician.name);
 
     // notify user
     getIO()

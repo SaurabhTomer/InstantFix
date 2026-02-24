@@ -60,6 +60,79 @@ export const sendOtpEmail = async (email, otp) => {
   }
 };
 
+export const sendWelcomeEmail = async (email, name) => {
+  try {
+    await mailer.sendMail({
+      from: `"InstantFix Support" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Welcome to InstantFix 🚀",
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+          <h2 style="color: #2c7be5;">Welcome to InstantFix, ${name}! 👋</h2>
+
+          <p>
+            We’re excited to have you onboard.
+          </p>
+
+          <p>
+            With <b>InstantFix</b>, you can book trusted electricians
+            quickly and easily whenever you need them.
+          </p>
+
+          <p>
+            Start exploring and book your first service today!
+          </p>
+
+          <hr style="margin: 20px 0;" />
+
+          <p style="font-size: 12px; color: #777;">
+            © ${new Date().getFullYear()} InstantFix. All rights reserved.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Welcome email sending failed:", error);
+    throw error;
+  }
+};
+
+export const sendLoginAlertEmail = async (email, name) => {
+  try {
+    await mailer.sendMail({
+      from: `"InstantFix Security" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "New Login to Your InstantFix Account 🔐",
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+          <h2 style="color: #ff9800;">New Login Detected</h2>
+
+          <p>Hi ${name},</p>
+
+          <p>
+            Your InstantFix account was just accessed.
+          </p>
+
+
+          <p>
+            If this was you, no action is required.
+            If not, please reset your password immediately.
+          </p>
+
+          <hr style="margin: 20px 0;" />
+
+          <p style="font-size: 12px; color: #777;">
+            This is an automated security message.
+          </p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    console.error("Login alert email failed:", error);
+    throw error;
+  }
+};
+
 
 export const sendRequestAcceptedMail = async (to, requestId) => {
   await mailer.sendMail({

@@ -20,7 +20,7 @@ const createAdmin = async () => {
 
     const admin = await User.create({
       name: "Super Admin",
-      email: "admin@instantfix.com",
+      email: "tomersaurabh71@gmail.com",
       phone: "9999999999",
       password: hashedPassword,
       role: "ADMIN",

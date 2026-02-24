@@ -12,7 +12,7 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     // 2️⃣ Check if token is blacklisted (logged out)
-    const isBlacklisted = await redis.get(token);
+    const isBlacklisted = (await redis.get(`blacklist:${token}`)) || (await redis.get(token));
     if (isBlacklisted) {
       return res.status(401).json({ msg: "Session expired. Please login again" });
     }

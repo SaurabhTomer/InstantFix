@@ -2,31 +2,31 @@ import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import redis from "../config/redis.js";
-import { sendOtpEmail } from "../utils/sendEmail.js";
+import { sendOtpEmail, sendWelcomeEmail } from "../utils/sendEmail.js";
+
+
 
 //signup
 export const signup = async (req, res) => {
   try {
-    const { name, email, phone, password , role} = req.body;
+    const { name, email, phone, password, role } = req.body;
 
-    // 1️⃣ Validation
     if (!name || !email || !phone || !password) {
       return res.status(400).json({ msg: "All fields are required" });
     }
 
-    // 2️⃣ Check existing user
+
     const existingUser = await User.findOne({
       $or: [{ email }, { phone }]
     });
+
 
     if (existingUser) {
       return res.status(409).json({ msg: "User already exists" });
     }
 
-    // 3️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4️⃣ Create user
     const user = await User.create({
       name,
       email,
@@ -34,10 +34,10 @@ export const signup = async (req, res) => {
       password: hashedPassword,
       role,
       approvalStatus: role === "ELECTRICIAN" ? "pending" : "approved",
-      // address is optional at signup
+
+
     });
 
-    // 5️⃣ Generate JWT
     const token = jwt.sign(
       {
         id: user._id,
@@ -47,7 +47,7 @@ export const signup = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    // 6️⃣ Set cookie
+
     res.cookie("token", token, {
       httpOnly: true,
       secure: false,        // true in production (HTTPS)
@@ -55,7 +55,13 @@ export const signup = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    // 7️⃣ Send response
+    sendWelcomeEmail(user.email, user.name)
+      .catch((err) => {
+        console.error("Email sending failed:", err.message);
+      });
+
+
+
     res.status(201).json({
       success: true,
       user: {
@@ -64,7 +70,7 @@ export const signup = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        approvalStatus:user.approvalStatus
+        approvalStatus: user.approvalStatus
       }
     });
   } catch (error) {
@@ -73,21 +79,21 @@ export const signup = async (req, res) => {
   }
 };
 
+
+
 //login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    //  Validation
-    if (!email  || !password) {
+    if (!email || !password) {
       return res
         .status(400)
         .json({ msg: "Email/Phone and password are required" });
     }
 
-    //  Find user
-    const user = await User.findOne({email});
 
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
     }
@@ -95,19 +101,18 @@ export const login = async (req, res) => {
     if (
       user.role === "ELECTRICIAN" &&
       user.approvalStatus !== "approved"
-  ) {
-  return res.status(403).json({
-    msg: "Electrician account not approved by admin yet",
-  });
-}
+    ) {
+      return res.status(403).json({
+        msg: "Electrician account not approved by admin yet",
+      });
+    }
 
-    //  Compare password
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ msg: "Invalid credentials" });
     }
 
-    //  Generate JWT
     const token = jwt.sign(
       {
         id: user._id,
@@ -125,7 +130,6 @@ export const login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-    //  Send response
     res.json({
       success: true,
       user: {
@@ -140,7 +144,7 @@ export const login = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ msg: "Server error" })
   }
 };
 
@@ -149,7 +153,6 @@ export const login = async (req, res) => {
 export const Logout = async (req, res) => {
   try {
     const token = req.cookies?.token;
-
     if (!token) {
       return res.status(400).json({ message: "Token not provided" });
     }
@@ -159,15 +162,14 @@ export const Logout = async (req, res) => {
 
     // till this keep this token 
     const ttl = decoded.exp - Math.floor(Date.now() / 1000);
-
     // blacklist token in redis
     await redis.set(`blacklist:${token}`, "true", "EX", ttl);
 
     // clear cookie if exists
     res.clearCookie("token", {
       httpOnly: true,
-      secure: false,
-      sameSite: "lax",
+      secure: true,
+      sameSite: "strict",
     });
     // console.log(token);
 
@@ -180,40 +182,38 @@ export const Logout = async (req, res) => {
   }
 };
 
+
+
 //SEND OTP
 export const sendOTP = async (req, res) => {
   try {
     const { email } = req.body;
-
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({email});
-
-    
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(200).json({
         message: "If the email exists, OTP has been sent",
       });
     }
 
-    // generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // console.log(otp);
+    console.log(otp);
 
-     const rediskey = `send_otp:${email}`;
+    const rediskey = `otp:${email}`;
+    console.log(redis.options.host);
     await redis.set(
       rediskey,
       otp,
       "EX",
-      1 * 60
+      5 * 60
     );
     // console.log(otp);
 
-   // after generating otp
     sendOtpEmail(email, otp)
-    .catch(err => console.error("send otp failed:", err));
+      .catch(err => console.error("send otp failed:", err));
 
     return res.status(200).json({
       message: "OTP sent to your email",
@@ -225,22 +225,21 @@ export const sendOTP = async (req, res) => {
   }
 };
 
-//RESEND OTP
 
+
+//RESEND OTP
 export const resendEmailOtp = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // 1. Validate
     if (!email) {
       return res.status(400).json({
         message: "Email is required",
       });
     }
 
-    const redisKey = `resend_otp:${email}`;
-
-    // 2. Prevent OTP spam (check existing OTP)
+    const redisKey = `otp:${email}`;
+    //  Prevent OTP spam (check existing OTP)
     const existingOtp = await redis.get(redisKey);
 
     if (existingOtp) {
@@ -251,20 +250,19 @@ export const resendEmailOtp = async (req, res) => {
       });
     }
 
-    // 3. Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(otp);
-    // 4. Store OTP 
-    await redis.set(redisKey, otp, "EX", 1 * 60);
+    console.log("resend otp " , otp);
+    
 
-    // 5. Send OTP email (NON-BLOCKING)
+    await redis.set(redisKey, otp, "EX", 5 * 60);
+
+    //  Send OTP email (NON-BLOCKING)
     sendOtpEmail(email, otp)
       .catch(err => console.error("Resend email OTP failed:", err));
 
     return res.status(200).json({
       message: "OTP resent successfully to your email",
     });
-
   } catch (error) {
     console.error("Resend email OTP error:", error);
     return res.status(500).json({
@@ -281,12 +279,13 @@ export const verifyOtp = async (req, res) => {
     const { email, otp } = req.body;
 
     if (!email || !otp) {
+
       return res.status(400).json({
         message: "Email and OTP are required",
-      });
+      })
     }
 
-    const storedOtp = await redis.get(`send_otp:${email}`);
+    const storedOtp = await redis.get(`otp:${email}`);
 
     if (!storedOtp) {
       return res.status(400).json({
@@ -294,17 +293,17 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
+
     if (storedOtp !== otp) {
       return res.status(400).json({
         message: "Invalid OTP",
       });
     }
 
-    
-    await redis.del(`send_otp:${email}`); // OTP used once
+    await redis.del(`otp:${email}`); 
 
     await redis.set(
-      `sendotp_verified:${email}`,
+      `otp_verified:${email}`,
       "true",   // flag
       "EX",
       5 * 60 // 5 minutes window to reset password
@@ -313,21 +312,21 @@ export const verifyOtp = async (req, res) => {
     return res.status(200).json({
       message: "OTP verified successfully",
     });
-
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     return res.status(500).json({
       message: "Internal server error",
     });
   }
 };
 
+
+
 // RESET PASSWORD 
 export const resetPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
 
-    // 1️⃣ Validate input
     if (!email || !newPassword) {
       return res.status(400).json({
         message: "Email and new password are required",
@@ -339,20 +338,19 @@ export const resetPassword = async (req, res) => {
         message: "Password must be at least 8 characters",
       });
     }
+    // console.log("body" , req.body)
 
-    // 2️⃣ Check OTP verification flag (Redis)
-    const isVerified = await redis.get(`sendotp_verified:${email}`);
+    const isVerified = await redis.get(`otp_verified:${email}`);
 
     if (!isVerified) {
       return res.status(403).json({
         message: "OTP not verified or reset window expired",
       });
     }
+    // console.log(isVerified);
 
-    // 3️⃣ Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update password in MongoDB
     const user = await User.findOneAndUpdate(
       { email },
       { password: hashedPassword },
@@ -365,9 +363,8 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // 5️⃣ Cleanup Redis keys
-    await redis.del(`sendotp_verified:${email}`);
-    await redis.del(`send_otp:${email}`); // safety cleanup
+    await redis.del(`otp_verified:${email}`);
+    await redis.del(`otp:${email}`); 
 
     return res.status(200).json({
       message: "Password reset successful",
@@ -385,4 +382,9 @@ export const resetPassword = async (req, res) => {
 
 
 
- 
+
+
+
+
+
+
