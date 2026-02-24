@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { FaBolt, FaBell, FaMapMarkerAlt, FaUserCircle, FaSpinner, FaClock, FaCheckCircle, FaTools, FaClipboardList } from 'react-icons/fa';
+import { FaBolt, FaBell, FaMapMarkerAlt, FaUserCircle, FaSpinner, FaClock, FaCheckCircle, FaTools, FaClipboardList, FaTimes, FaCheck } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
+import axios from 'axios';
+import { serverUrl } from '../../App';
+import { toast } from 'react-toastify';
 import DashboardLayout from './DashboardLayout';
 import Overview from './Overview';
 import MyRequests from './MyRequests';
@@ -15,6 +18,7 @@ const UserDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true);
 
   // Get current location and user data from Redux
   const { currentCity, currentState, currentAddress, latitude, longitude, userData } = useSelector((state) => state.user);
@@ -34,6 +38,46 @@ const UserDashboard = () => {
     // Close mobile menu if needed
   };
 
+  // Fetch real notifications from backend
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get(
+          `${serverUrl}/api/notifications`,
+          { withCredentials: true }
+        );
+        
+        if (response.data.success) {
+          setNotifications(response.data.notifications);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        toast.error('Failed to load notifications');
+      } finally {
+        setIsLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+    
+    // Set up polling for real-time updates (every 30 seconds)
+    const interval = setInterval(fetchNotifications, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showNotifications && !event.target.closest('.notification-dropdown')) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showNotifications]);
+
   // Check if location is still loading
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -52,26 +96,67 @@ const UserDashboard = () => {
     return () => clearTimeout(timer);
   }, [currentCity, currentState]);
 
-  // Mock data for notifications
-  useEffect(() => {
-    // Simulate fetching notifications
-    const mockNotifications = [
-      { id: 1, message: 'Your service request #SR001 has been approved', time: '2 hours ago', read: false },
-      { id: 2, message: 'Electrician John Smith is on his way', time: '30 minutes ago', read: false },
-      { id: 3, message: 'Service completed for request #SR002', time: '1 day ago', read: true },
-    ];
-    setNotifications(mockNotifications);
-  }, []);
-
-  const markNotificationAsRead = (id) => {
-    setNotifications(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+  // Mark notification as read
+  const markNotificationAsRead = async (id) => {
+    try {
+      const response = await axios.patch(
+        `${serverUrl}/api/notifications/${id}`,
+        {},
+        { withCredentials: true }
+      );
+      
+      if (response.data.success) {
+        setNotifications(prev => 
+          prev.map(notif => 
+            notif._id === id ? { ...notif, isRead: true } : notif
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Delete notification
+  const deleteNotification = async (id) => {
+    try {
+      const response = await axios.delete(
+        `${serverUrl}/api/notifications/${id}`,
+        { withCredentials: true }
+      );
+      
+      if (response.data.success) {
+        setNotifications(prev => prev.filter(notif => notif._id !== id));
+        toast.success('Notification deleted');
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      toast.error('Failed to delete notification');
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  // Format notification time
+  const formatNotificationTime = (createdAt) => {
+    const now = new Date();
+    const notifTime = new Date(createdAt);
+    const diffMs = now - notifTime;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return notifTime.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: notifTime.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -175,7 +260,7 @@ const UserDashboard = () => {
               </div>
 
               {/* Notifications */}
-              <div className="relative">
+              <div className="relative notification-dropdown">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="relative p-2 text-gray-600 hover:text-yellow-600 transition-all duration-300 hover:scale-110"
@@ -196,26 +281,75 @@ const UserDashboard = () => {
                 {/* Notifications Dropdown */}
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                    <div className="p-4 border-b border-gray-200">
+                    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                       <h3 className="font-semibold text-gray-800">Notifications</h3>
+                      {unreadCount > 0 && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                          {unreadCount} new
+                        </span>
+                      )}
                     </div>
                     <div className="max-h-96 overflow-y-auto">
-                      {notifications.length > 0 ? (
+                      {isLoadingNotifications ? (
+                        <div className="flex items-center justify-center py-8">
+                          <FaSpinner className="w-5 h-5 animate-spin text-blue-500 mr-2" />
+                          <span className="text-gray-600">Loading notifications...</span>
+                        </div>
+                      ) : notifications.length > 0 ? (
                         notifications.map(notif => (
                           <div
-                            key={notif.id}
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                              !notif.read ? 'bg-yellow-50' : ''
+                            key={notif._id}
+                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                              !notif.isRead ? 'bg-yellow-50' : ''
                             }`}
-                            onClick={() => markNotificationAsRead(notif.id)}
                           >
-                            <p className="text-sm text-gray-800">{notif.message}</p>
-                            <p className="text-xs text-gray-500 mt-1">{notif.time}</p>
+                            <div className="flex justify-between items-start">
+                              <div 
+                                className="flex-1 cursor-pointer"
+                                onClick={() => !notif.isRead && markNotificationAsRead(notif._id)}
+                              >
+                                <p className="text-sm font-medium text-gray-800 mb-1">
+                                  {notif.title}
+                                </p>
+                                <p className="text-sm text-gray-600 mb-2">
+                                  {notif.message}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {formatNotificationTime(notif.createdAt)}
+                                </p>
+                              </div>
+                              <div className="flex gap-1 ml-2">
+                                {!notif.isRead && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      markNotificationAsRead(notif._id);
+                                    }}
+                                    className="text-green-600 hover:text-green-700 p-1"
+                                    title="Mark as read"
+                                  >
+                                    <FaCheck className="w-3 h-3" />
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(notif._id);
+                                  }}
+                                  className="text-red-600 hover:text-red-700 p-1"
+                                  title="Delete notification"
+                                >
+                                  <FaTimes className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         ))
                       ) : (
-                        <div className="p-4 text-center text-gray-500">
-                          No notifications
+                        <div className="p-8 text-center">
+                          <FaBell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500">No notifications yet</p>
+                          <p className="text-xs text-gray-400 mt-1">We'll notify you about updates</p>
                         </div>
                       )}
                     </div>
