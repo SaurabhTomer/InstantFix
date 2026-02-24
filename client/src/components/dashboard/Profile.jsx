@@ -1,19 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const { userData, currentCity, currentState, currentAddress, currentPincode } = useSelector((state) => state.user);
+
   const [formData, setFormData] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    address: '123 Main Street, Apt 4B',
-    city: 'New York',
-    state: 'NY',
-    pincode: '10001',
-    bio: 'Homeowner looking for reliable electrical services'
+    Name: userData?.user?.name?.split(' ')[0] || 'John',
+    email: userData?.user?.email || 'john.doe@example.com',
+    phone: userData?.user?.phone || '+1 234 567 8900',
+    address: currentAddress || '123 Main Street, Apt 4B',
+    city: currentCity || 'New York',
+    state: currentState || 'NY',
+    pincode: currentPincode || '10001',
+    bio: userData?.bio || 'Homeowner looking for reliable electrical services'
   });
+
+  // Update form data when userData or location data changes
+  useEffect(() => {
+    if (userData || currentCity || currentState) {
+      setFormData({
+      Name: userData?.user?.name?.split(' ')[0] || 'John',
+        email: userData?.user?.email || 'john.doe@example.com',
+        phone: userData?.user?.phone || '+1 234 567 8900',
+        address: currentAddress || '123 Main Street, Apt 4B',
+        city: currentCity || 'New York',
+        state: currentState || 'NY',
+        pincode: currentPincode || '10001',
+        bio: userData?.bio || 'Homeowner looking for reliable electrical services'
+      });
+    }
+  }, [userData, currentCity, currentState, currentAddress, currentPincode]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -54,12 +72,12 @@ const Profile = () => {
                   <FaEdit className="w-4 h-4 text-white" />
                 </button>
               </div>
-              
+
               <h3 className="text-xl font-bold text-gray-800 mb-1">
-                {formData.firstName} {formData.lastName}
+                {formData.Name}
               </h3>
               <p className="text-gray-600 mb-4">{formData.email}</p>
-              
+
               <div className="flex justify-center gap-2 mb-4">
                 <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
                   Verified
@@ -69,7 +87,7 @@ const Profile = () => {
                 </span>
               </div>
 
-              <button 
+              <button
                 onClick={() => setIsEditing(!isEditing)}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -110,14 +128,14 @@ const Profile = () => {
               <h3 className="text-xl font-bold text-gray-800">Personal Information</h3>
               {isEditing && (
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     onClick={handleSave}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                   >
                     <FaSave className="w-4 h-4" />
                     Save
                   </button>
-                  <button 
+                  <button
                     onClick={handleCancel}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                   >
@@ -137,29 +155,14 @@ const Profile = () => {
                 </label>
                 <input
                   type="text"
-                  name="firstName"
-                  value={formData.firstName}
+                  name="Name"
+                  value={formData.Name}
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-600"
                 />
               </div>
 
-              {/* Last Name */}
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
-                  <FaUser className="w-4 h-4 text-blue-500" />
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-600"
-                />
-              </div>
 
               {/* Email */}
               <div>
@@ -248,18 +251,7 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* Bio */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <label className="block text-gray-700 font-semibold mb-2">Bio</label>
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                rows="3"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent resize-none disabled:bg-gray-50 disabled:text-gray-600"
-              />
-            </div>
+      
           </div>
         </div>
       </div>

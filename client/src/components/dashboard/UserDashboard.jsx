@@ -15,8 +15,8 @@ const UserDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
 
-  // Get current location from Redux
-  const { currentCity, currentState, currentAddress, latitude, longitude } = useSelector((state) => state.user);
+  // Get current location and user data from Redux
+  const { currentCity, currentState, currentAddress, latitude, longitude, userData } = useSelector((state) => state.user);
 
   // Check if location is still loading
   useEffect(() => {
@@ -217,7 +217,7 @@ const UserDashboard = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
                   <FaUserCircle className="w-5 h-5 text-white" />
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">John Doe</span>
+                <span className="hidden sm:block text-sm font-medium text-gray-700">{userData?.name || 'John Doe'}</span>
               </div>
             </div>
           </div>

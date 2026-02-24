@@ -36,7 +36,7 @@ function SignIn() {
 
       toast.success("Login Successful...");
 
-      navigate("/"); 
+      navigate("/user"); 
 
     } catch (error) {
       toast.error(error?.response?.data?.message || "Login Failed");
