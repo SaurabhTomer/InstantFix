@@ -139,28 +139,28 @@ const AdminOverview = () => {
       </div>
 
       {/* Admin Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-10">
         {adminStats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <div 
               key={index} 
-              className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
               style={{
                 animation: `slide-up 0.5s ease-out ${0.1 * (index + 1)}s both`
               }}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <div 
-                  className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300`}
+                  className={`w-16 h-16 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300`}
                   style={{
                     animation: `icon-bounce 2s ease-in-out ${0.1 * (index + 1)}s infinite`
                   }}
                 >
-                  <Icon className="w-6 h-6 text-white" />
+                  <Icon className="w-8 h-8 text-white" />
                 </div>
                 <div className="text-right">
-                  <span className={`text-2xl font-bold ${stat.textColor} transition-transform duration-300 hover:scale-110`}>
+                  <span className={`text-3xl font-bold ${stat.textColor} transition-transform duration-300 hover:scale-110`}>
                     {stat.value}
                   </span>
                   <div className={`text-sm font-medium ${
@@ -170,7 +170,7 @@ const AdminOverview = () => {
                   </div>
                 </div>
               </div>
-              <h3 className="text-gray-700 font-semibold transition-colors duration-300 hover:text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-700 transition-colors duration-300 hover:text-gray-900">
                 {stat.title}
               </h3>
             </div>
@@ -179,10 +179,10 @@ const AdminOverview = () => {
       </div>
 
       {/* Recent Activities */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <FaClock className="w-5 h-5 text-orange-500" />
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-4 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+            <FaClock className="w-4 h-4 text-orange-500" />
             Recent Activities
           </h3>
           <button className="text-orange-600 hover:text-orange-700 font-medium text-sm">
@@ -190,19 +190,19 @@ const AdminOverview = () => {
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {recentActivities.map((activity) => {
             const Icon = getActivityIcon(activity.type);
             return (
-              <div key={activity.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                <div className={`w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm`}>
-                  <Icon className={`w-5 h-5 ${getActivityColor(activity.type)}`} />
+              <div key={activity.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                <div className={`w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm`}>
+                  <Icon className={`w-4 h-4 ${getActivityColor(activity.type)}`} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-gray-800">
+                  <p className="text-sm text-gray-800">
                     <span className="font-semibold">{activity.user}</span> {activity.action}
                   </p>
-                  <p className="text-sm text-gray-500">{activity.time}</p>
+                  <p className="text-xs text-gray-500">{activity.time}</p>
                 </div>
               </div>
             );
@@ -211,30 +211,30 @@ const AdminOverview = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl p-6 text-white shadow-lg">
-          <FaExclamationTriangle className="w-8 h-8 mb-3" />
-          <h3 className="text-lg font-bold mb-2">Pending Approvals</h3>
-          <p className="text-sm opacity-90 mb-4">3 electricians waiting for approval</p>
-          <button className="bg-white text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-50 transition-colors">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-8">
+        <div className="bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-shadow">
+          <FaExclamationTriangle className="w-10 h-10 mb-4" />
+          <h3 className="text-xl font-bold mb-3">Pending Approvals</h3>
+          <p className="text-base opacity-90 mb-6">3 electricians waiting for approval</p>
+          <button className="bg-white text-red-600 px-6 py-3 rounded-lg font-semibold hover:bg-red-50 transition-colors">
             Review Now
           </button>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
-          <FaUsers className="w-8 h-8 mb-3" />
-          <h3 className="text-lg font-bold mb-2">User Management</h3>
-          <p className="text-sm opacity-90 mb-4">Manage all platform users</p>
-          <button className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-shadow">
+          <FaUsers className="w-10 h-10 mb-4" />
+          <h3 className="text-xl font-bold mb-3">User Management</h3>
+          <p className="text-base opacity-90 mb-6">Manage all platform users</p>
+          <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
             Manage Users
           </button>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
-          <FaChartLine className="w-8 h-8 mb-3" />
-          <h3 className="text-lg font-bold mb-2">View Analytics</h3>
-          <p className="text-sm opacity-90 mb-4">Detailed platform insights</p>
-          <button className="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold hover:bg-green-50 transition-colors">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-8 text-white shadow-lg hover:shadow-xl transition-shadow">
+          <FaChartLine className="w-10 h-10 mb-4" />
+          <h3 className="text-xl font-bold mb-3">View Analytics</h3>
+          <p className="text-base opacity-90 mb-6">Detailed platform insights</p>
+          <button className="bg-white text-green-600 px-6 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors">
             View Reports
           </button>
         </div>

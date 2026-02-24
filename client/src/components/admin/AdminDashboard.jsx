@@ -231,7 +231,7 @@ const AdminDashboard = () => {
       {/* Main Dashboard Content */}
       <div className="relative z-10 flex">
         <AdminDashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
-          <div className="space-y-8">
+          <div className="p-6 space-y-6">
             {/* Page Header */}
             <div 
               className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6"

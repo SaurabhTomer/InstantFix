@@ -140,55 +140,55 @@ const UsersManagement = () => {
       </div>
 
       {/* Users Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-800">{users.length}</p>
+              <p className="text-3xl font-bold text-gray-800">{users.length}</p>
             </div>
-            <FaUsers className="w-8 h-8 text-blue-500" />
+            <FaUsers className="w-10 h-10 text-blue-500" />
           </div>
         </div>
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-4">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-green-600">{users.filter(u => u.status === 'active').length}</p>
+              <p className="text-3xl font-bold text-green-600">{users.filter(u => u.status === 'active').length}</p>
             </div>
-            <FaCheckCircle className="w-8 h-8 text-green-500" />
+            <FaCheckCircle className="w-10 h-10 text-green-500" />
           </div>
         </div>
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-4">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Suspended</p>
-              <p className="text-2xl font-bold text-red-600">{users.filter(u => u.status === 'suspended').length}</p>
+              <p className="text-3xl font-bold text-red-600">{users.filter(u => u.status === 'suspended').length}</p>
             </div>
-            <FaBan className="w-8 h-8 text-red-500" />
+            <FaBan className="w-10 h-10 text-red-500" />
           </div>
         </div>
-        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-4">
+        <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">{users.filter(u => u.status === 'pending').length}</p>
+              <p className="text-3xl font-bold text-yellow-600">{users.filter(u => u.status === 'pending').length}</p>
             </div>
-            <FaClock className="w-8 h-8 text-yellow-500" />
+            <FaClock className="w-10 h-10 text-yellow-500" />
           </div>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <FaUsers className="w-5 h-5 text-blue-500" />
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-8">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+            <FaUsers className="w-6 h-6 text-blue-500" />
             All Users
           </h3>
           <button className="flex items-center gap-2 text-gray-600 hover:text-gray-800">
-            <FaCog className="w-4 h-4" />
-            <span className="text-sm">Sort</span>
+            <FaCog className="w-5 h-5" />
+            <span className="text-base">Sort</span>
           </button>
         </div>
 

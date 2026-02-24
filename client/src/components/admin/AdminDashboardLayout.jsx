@@ -84,8 +84,8 @@ const AdminDashboardLayout = ({ children, activeTab, setActiveTab }) => {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-8">
-          <div className="max-w-7xl mx-auto">
+        <div className="flex-1">
+          <div className="w-full h-full">
             {children}
           </div>
         </div>
