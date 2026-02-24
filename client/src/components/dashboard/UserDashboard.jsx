@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FaBolt, FaBell, FaMapMarkerAlt, FaUserCircle, FaSpinner, FaPhone, FaClock, FaHeadset } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaBolt, FaBell, FaMapMarkerAlt, FaUserCircle, FaSpinner, FaClock, FaCheckCircle, FaTools, FaClipboardList } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import DashboardLayout from './DashboardLayout';
 import Overview from './Overview';
@@ -253,14 +254,15 @@ const UserDashboard = () => {
                 {/* Quick Actions */}
                 {activeTab === 'overview' && (
                   <div className="flex gap-2">
-                    <button 
-                      className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white rounded-lg hover:from-yellow-500 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                    <Link 
+                      to="/create-request"
+                      className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white rounded-lg hover:from-yellow-500 hover:to-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 inline-block"
                       style={{
                         animation: 'scale-in 0.5s ease-out'
                       }}
                     >
                       Create Request
-                    </button>
+                    </Link>
                     <button 
                       className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-300 hover:shadow-md"
                       style={{
