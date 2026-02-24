@@ -6,6 +6,7 @@ import SignIn from './pages/SignIn';
 import ForgotPassword from './pages/ForgotPassword';
 import CreateRequest from './pages/CreateRequest';
 import Home from './pages/Home';
+import UserDashboardPage from './pages/UserDashboardPage';
 import useGetLocation from './hook/UseGetLocation';
 
 // Server URL
@@ -35,6 +36,7 @@ const App = () => {
         <Route path='/signin' element={<SignIn />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/create-request' element={<CreateRequest />} />
+        <Route path='/dashboard' element={<UserDashboardPage />} />
       </Routes>
     </>
   )
