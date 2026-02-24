@@ -34,13 +34,12 @@ function SignUp() {
                 role
             }, { withCredentials: true })
             // console.log(result);
-
             dispatch(setUserData(result.data))
             toast.success("Account created successfully...")
             navigate("/")
         } catch (error) {
             // setErr(error?.response?.data?.message)
-            toast.error(error?.response?.data?.message)
+            toast.warn(error?.response?.data?.message)
         } finally {
             setLoading(false)
         }
