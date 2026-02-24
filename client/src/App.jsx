@@ -8,6 +8,7 @@ import CreateRequest from './pages/CreateRequest';
 import Home from './pages/Home';
 import UserDashboardPage from './pages/UserDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import ElectricianDashboardPage from './pages/ElectricianDashboardPage';
 import useGetLocation from './hook/UseGetLocation';
 
 // Server URL
@@ -39,6 +40,7 @@ const App = () => {
         <Route path='/create-request' element={<CreateRequest />} />
         <Route path='/dashboard' element={<UserDashboardPage />} />
         <Route path='/admin' element={<AdminDashboardPage />} />
+        <Route path='/electrician' element={<ElectricianDashboardPage />} />
       </Routes>
     </>
   )
