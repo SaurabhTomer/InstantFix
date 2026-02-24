@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { FaBolt, FaBell, FaMapMarkerAlt, FaUserCircle, FaSpinner, FaClock, FaCheckCircle, FaTools, FaClipboardList } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import DashboardLayout from './DashboardLayout';
@@ -10,6 +10,7 @@ import Profile from './Profile';
 import Settings from './Settings';
 
 const UserDashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('overview');
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -17,6 +18,21 @@ const UserDashboard = () => {
 
   // Get current location and user data from Redux
   const { currentCity, currentState, currentAddress, latitude, longitude, userData } = useSelector((state) => state.user);
+
+  // Handle URL parameter for tab navigation
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['overview', 'requests', 'services', 'profile', 'settings'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+    // Close mobile menu if needed
+  };
 
   // Check if location is still loading
   useEffect(() => {
@@ -46,11 +62,6 @@ const UserDashboard = () => {
     ];
     setNotifications(mockNotifications);
   }, []);
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    // Close mobile menu if needed
-  };
 
   const markNotificationAsRead = (id) => {
     setNotifications(prev => 
@@ -217,7 +228,7 @@ const UserDashboard = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
                   <FaUserCircle className="w-5 h-5 text-white" />
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-gray-700">{userData?.name || 'John Doe'}</span>
+                <span className="hidden sm:block text-sm font-medium text-gray-700">{userData?.user?.name || 'John Doe'}</span>
               </div>
             </div>
           </div>

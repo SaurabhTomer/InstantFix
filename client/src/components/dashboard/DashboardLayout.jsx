@@ -73,8 +73,8 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
                   <FaUser className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">{userData?.name}</p>
-                  <p className="text-xs text-gray-600">{userData?.email}</p>
+                  <p className="font-semibold text-gray-800">{userData?.user?.name}</p>
+                  <p className="text-xs text-gray-600">{userData?.user?.email}</p>
                 </div>
               </div>
               <button className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
