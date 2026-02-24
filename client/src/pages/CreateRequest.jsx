@@ -110,7 +110,7 @@ function CreateServiceRequest() {
             );
 
             toast.success("Service request created 🚀");
-            navigate("/");
+            navigate("/user");
 
         } catch (error) {
             toast.error(error?.response?.data?.message || "Failed to create request");

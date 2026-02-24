@@ -189,84 +189,103 @@ export const createServiceRequest = async (req, res) => {
 //get all request
 
 export const getMyAllRequest = async (req, res) => {
-
   try {
-
     const userId = req.user.id;
-
-
-
-    // query params
-
     const page = parseInt(req.query.page) || 1;
-
     const limit = parseInt(req.query.limit) || 10;
-
-
-
     const skip = (page - 1) * limit;
 
-
-
     //count total no. of request
-
     const total = await ServiceRequest.countDocuments({
-
       customer: userId
-
     });
 
     //find request 
-
     const requests = await ServiceRequest.find({
-
       customer: userId
-
     })
-
       .sort({ createdAt: -1 })
-
       .skip(skip)
-
       .limit(limit);
 
-
-
     return res.status(200).json({
-
       success: true,
-
       page,
-
       limit,
-
       total,
-
       totalPages: Math.ceil(total / limit),
-
       data: requests
-
     });
-
-
-
   } catch (error) {
-
     console.error(error);
-
     return res.status(500).json({
-
       success: false,
-
       message: "Internal server error"
-
     });
-
   }
-
 };
 
+//get requests by status
+export const getRequestsByStatus = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { status } = req.query;
+    
+    // Validate status
+    const validStatuses = ['pending', 'accepted', 'in-progress', 'completed', 'cancelled'];
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Valid statuses: " + validStatuses.join(', ')
+      });
+    }
 
+    // Build query
+    const query = { customer: userId };
+    if (status) {
+      query.status = status;
+    }
+
+    // Find requests
+    const requests = await ServiceRequest.find(query)
+      .sort({ createdAt: -1 })
+      .populate("electrician", "name phone avatar");
+
+    // Group requests by status
+    const groupedRequests = {
+      pending: [],
+      accepted: [],
+      'in-progress': [],
+      completed: [],
+      cancelled: []
+    };
+
+    requests.forEach(request => {
+      if (groupedRequests[request.status]) {
+        groupedRequests[request.status].push(request);
+      }
+    });
+
+    return res.status(200).json({
+      success: true,
+      requests: status ? groupedRequests[status] : groupedRequests,
+      counts: {
+        pending: groupedRequests.pending.length,
+        accepted: groupedRequests.accepted.length,
+        'in-progress': groupedRequests['in-progress'].length,
+        completed: groupedRequests.completed.length,
+        cancelled: groupedRequests.cancelled.length,
+        total: requests.length
+      }
+    });
+  } catch (error) {
+    console.error("Get requests by status error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
 
 
 

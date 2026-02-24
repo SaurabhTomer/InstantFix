@@ -15,7 +15,7 @@ function UseGetUser() {
                 const result = await axios.get(`${serverUrl}/api/user/getme`,
                     { withCredentials: true }
                 )
-                console.log(result.data);
+                // console.log(result.data);
                 dispatch(setUserData(result.data))
 
             } catch (error) {

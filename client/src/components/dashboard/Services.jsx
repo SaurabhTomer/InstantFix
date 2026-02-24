@@ -1,222 +1,224 @@
-import React, { useState } from 'react';
-import { FaTools, FaBolt, FaLightbulb, FaPlug, FaFan, FaSearch, FaStar, FaClock } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaTools, FaBolt, FaLightbulb, FaPlug, FaFan, FaCalendar, FaMapMarkerAlt, FaUser, FaCheckCircle, FaExclamationTriangle, FaSpinner, FaClock } from 'react-icons/fa';
+import { useSelector } from 'react-redux';
+import axios from 'axios';
+import { serverUrl } from '../../App';
+import { toast } from 'react-toastify';
 
 const Services = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [userRequests, setUserRequests] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const { userData } = useSelector((state) => state.user);
 
-  const categories = [
-    { id: 'all', name: 'All Services', icon: FaTools },
-    { id: 'lighting', name: 'Lighting', icon: FaLightbulb },
-    { id: 'wiring', name: 'Wiring', icon: FaBolt },
-    { id: 'appliances', name: 'Appliances', icon: FaPlug },
-    { id: 'fans', name: 'Fans & Cooling', icon: FaFan }
-  ];
-
-  const services = [
-    {
-      id: 1,
-      name: 'Fan Installation & Repair',
-      category: 'fans',
-      description: 'Complete fan installation, wiring, and repair services for all types of fans',
-      price: 'Starting from $50',
-      duration: '1-2 hours',
-      rating: 4.8,
-      image: 'fan',
-      popular: true
+  const statusColumns = [
+    { 
+      id: 'pending', 
+      name: 'Pending', 
+      color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      icon: FaClock 
     },
-    {
-      id: 2,
-      name: 'LED Light Installation',
-      category: 'lighting',
-      description: 'Professional LED light installation for homes and offices with energy-efficient solutions',
-      price: 'Starting from $30',
-      duration: '30-60 minutes',
-      rating: 4.9,
-      image: 'light',
-      popular: true
+    { 
+      id: 'accepted', 
+      name: 'Accepted', 
+      color: 'bg-blue-100 text-blue-800 border-blue-200',
+      icon: FaCheckCircle 
     },
-    {
-      id: 3,
-      name: 'Switch Board Repair',
-      category: 'wiring',
-      description: 'Repair and replacement of switch boards, circuit breakers, and electrical panels',
-      price: 'Starting from $40',
-      duration: '1-2 hours',
-      rating: 4.7,
-      image: 'switch',
-      popular: false
+    { 
+      id: 'in-progress', 
+      name: 'In Progress', 
+      color: 'bg-purple-100 text-purple-800 border-purple-200',
+      icon: FaSpinner 
     },
-    {
-      id: 4,
-      name: 'Wiring & Rewiring',
-      category: 'wiring',
-      description: 'Complete wiring solutions for new constructions and rewiring for old properties',
-      price: 'Starting from $100',
-      duration: '2-4 hours',
-      rating: 4.6,
-      image: 'wiring',
-      popular: false
+    { 
+      id: 'completed', 
+      name: 'Completed', 
+      color: 'bg-green-100 text-green-800 border-green-200',
+      icon: FaCheckCircle 
     },
-    {
-      id: 5,
-      name: 'AC Installation',
-      category: 'appliances',
-      description: 'Air conditioner installation, wiring, and maintenance services',
-      price: 'Starting from $80',
-      duration: '2-3 hours',
-      rating: 4.8,
-      image: 'ac',
-      popular: true
-    },
-    {
-      id: 6,
-      name: 'Geyser Installation',
-      category: 'appliances',
-      description: 'Water geyser installation, plumbing connections, and electrical setup',
-      price: 'Starting from $60',
-      duration: '1-2 hours',
-      rating: 4.5,
-      image: 'geyser',
-      popular: false
+    { 
+      id: 'cancelled', 
+      name: 'Cancelled', 
+      color: 'bg-red-100 text-red-800 border-red-200',
+      icon: FaExclamationTriangle 
     }
   ];
 
-  const getServiceIcon = (serviceName) => {
-    if (serviceName.toLowerCase().includes('fan')) return FaFan;
-    if (serviceName.toLowerCase().includes('light')) return FaLightbulb;
-    if (serviceName.toLowerCase().includes('switch') || serviceName.toLowerCase().includes('wiring')) return FaBolt;
-    return FaTools;
+
+  const getServiceIcon = (serviceType) => {
+    switch (serviceType?.toLowerCase()) {
+      case 'fan':
+      case 'fan installation':
+      case 'fan repair':
+        return FaFan;
+      case 'light':
+      case 'lighting':
+      case 'led':
+        return FaLightbulb;
+      case 'wiring':
+      case 'switch':
+      case 'circuit':
+        return FaBolt;
+      case 'appliance':
+      case 'ac':
+      case 'geyser':
+        return FaPlug;
+      default:
+        return FaTools;
+    }
   };
 
-  const filteredServices = services.filter(service => {
-    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         service.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || service.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Helper function to format address
+  const formatAddress = (address) => {
+    if (!address) return 'Address not provided';
+    if (typeof address === 'string') return address;
+    return `${address.street || ''}, ${address.city || ''}, ${address.state || ''} ${address.pincode || ''}`.trim();
+  };
+
+  // Fetch user requests
+  useEffect(() => {
+    const fetchUserRequests = async () => {
+      try {
+        const response = await axios.get(
+          `${serverUrl}/api/service/by-status`,
+          { withCredentials: true }
+        );
+        console.log(response);
+        
+        if (response.data.success) {
+          setUserRequests(response.data.requests || {});
+        }
+      } catch (error) {
+        console.error('Error fetching user requests:', error);
+        toast.error('Failed to load your requests');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserRequests();
+  }, []);
+
+  // Group requests by status
+  const getRequestsByStatus = (status) => {
+    return userRequests[status] || [];
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <FaSpinner className="w-8 h-8 text-yellow-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading your requests...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Our Services</h2>
-        <p className="text-gray-600">Professional electrical services for all your needs</p>
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">My Service Requests</h2>
+        <p className="text-gray-600">Track and manage all your electrical service requests</p>
       </div>
 
-      {/* Category Filter */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
-        <div className="flex flex-wrap gap-3">
-          {categories.map((category) => {
-            const Icon = category.icon;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 ${
-                  selectedCategory === category.id
-                    ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-yellow-50 hover:text-yellow-700'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="font-medium">{category.name}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-6">
-        <div className="relative">
-          <FaSearch className="absolute left-3 top-3.5 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="Search for services..."
-            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredServices.map((service) => {
-          const Icon = getServiceIcon(service.name);
+      {/* Status Columns */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        {statusColumns.map((column) => {
+          const Icon = column.icon;
+          const requests = getRequestsByStatus(column.id);
+          
           return (
-            <div key={service.id} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-shadow">
-              {/* Service Header */}
-              <div className="relative">
-                <div className="h-32 bg-gradient-to-br from-yellow-100 to-amber-100 flex items-center justify-center">
-                  <Icon className="w-16 h-16 text-yellow-600" />
-                </div>
-                {service.popular && (
-                  <div className="absolute top-3 right-3 px-3 py-1 bg-red-500 text-white rounded-full text-xs font-semibold">
-                    Popular
+            <div key={column.id} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              {/* Column Header */}
+              <div className={`p-4 ${column.color} border-b-2`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className="w-5 h-5" />
+                    <h3 className="font-bold">{column.name}</h3>
                   </div>
-                )}
+                  <span className="bg-white/30 px-2 py-1 rounded-full text-xs font-semibold">
+                    {requests.length}
+                  </span>
+                </div>
               </div>
 
-              {/* Service Content */}
-              <div className="p-6">
-                <h3 className="text-lg font-bold text-gray-800 mb-2">{service.name}</h3>
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{service.description}</p>
+              {/* Requests in Column */}
+              <div className="p-3 space-y-3 max-h-96 overflow-y-auto">
+                {requests.map((request) => {
+                  const ServiceIcon = getServiceIcon(request.issueType);
+                  
+                  return (
+                    <div key={request._id} className="bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition-colors cursor-pointer">
+                      {/* Service Icon and Type */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-lg flex items-center justify-center">
+                          <ServiceIcon className="w-4 h-4 text-yellow-600" />
+                        </div>
+                        <h4 className="font-semibold text-sm text-gray-800 truncate">
+                          {request.issueType || 'Electrical Service'}
+                        </h4>
+                      </div>
 
-                {/* Service Details */}
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Price:</span>
-                    <span className="font-semibold text-green-600">{service.price}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 flex items-center gap-1">
-                      <FaClock className="w-3 h-3" />
-                      Duration:
-                    </span>
-                    <span className="font-medium text-gray-700">{service.duration}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 flex items-center gap-1">
-                      <FaStar className="w-3 h-3 text-yellow-500" />
-                      Rating:
-                    </span>
-                    <span className="font-medium text-gray-700">{service.rating}</span>
-                  </div>
-                </div>
+                      {/* Description */}
+                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                        {request.description || 'No description provided'}
+                      </p>
 
-                {/* Action Button */}
-                <button className="w-full py-2 bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-semibold rounded-xl hover:from-yellow-500 hover:to-amber-600 transition-all">
-                  Book Service
-                </button>
+                      {/* Request Details */}
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <FaMapMarkerAlt className="w-3 h-3 text-red-500" />
+                          <span className="truncate">{formatAddress(request.address)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <FaCalendar className="w-3 h-3 text-blue-500" />
+                          <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        {request.electrician?.name && (
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <FaUser className="w-3 h-3 text-green-500" />
+                            <span className="truncate">{request.electrician.name}</span>
+                          </div>
+                        )}
+                        {request.estimatedPrice && (
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
+                            <span className="text-gray-500">Price:</span>
+                            <span className="font-semibold text-green-600">${request.estimatedPrice}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Empty State for Column */}
+                {requests.length === 0 && (
+                  <div className="text-center py-6">
+                    <Icon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500">No {column.name.toLowerCase()} requests</p>
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Empty State */}
-      {filteredServices.length === 0 && (
+      {/* Overall Empty State */}
+      {!isLoading && (!userRequests.pending?.length && !userRequests.accepted?.length && !userRequests['in-progress']?.length && !userRequests.completed?.length && !userRequests.cancelled?.length) && (
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
           <FaTools className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">No services found</h3>
-          <p className="text-gray-500">Try adjusting your search or filter criteria</p>
-        </div>
-      )}
-
-      {/* Emergency Service Banner */}
-      <div className="mt-8 bg-gradient-to-r from-red-500 to-red-600 rounded-2xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold mb-2">Emergency Electrical Service</h3>
-            <p className="opacity-90">24/7 emergency electrical services available</p>
-          </div>
-          <button className="bg-white text-red-600 px-6 py-3 rounded-xl font-bold hover:bg-red-50 transition-colors">
-            Call Now
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">No service requests yet</h3>
+          <p className="text-gray-500 mb-4">Create your first service request to get started</p>
+          <button 
+            onClick={() => window.location.href = '/create-request'}
+            className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-semibold rounded-xl hover:from-yellow-500 hover:to-amber-600 transition-all"
+          >
+            Create Your First Request
           </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

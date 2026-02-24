@@ -1,5 +1,5 @@
 import upload from "../middlewares/multer.js"
-import { cancelServiceRequest, createServiceRequest, getMyAllRequest, getMyRequestById } from "../controllers/service.controller.js";
+import { cancelServiceRequest, createServiceRequest, getMyAllRequest, getMyRequestById, getRequestsByStatus } from "../controllers/service.controller.js";
 import { authMiddleware, authorizeRoles } from "../middlewares/auth.middleware.js";
 import express from 'express'
 import { acceptRequest, completeJob, startJob } from "../controllers/service.electrician.controller.js";
@@ -23,10 +23,18 @@ serviceRouter.post(
 
 //pagination
 serviceRouter.get(
-  "/",
+  "/all-requests",
   authMiddleware,
   authorizeRoles("USER"),
   getMyAllRequest
+);
+
+//get requests by status
+serviceRouter.get(
+  "/by-status",
+  authMiddleware,
+  authorizeRoles("USER"),
+  getRequestsByStatus
 );
 
 // get reuest by id
