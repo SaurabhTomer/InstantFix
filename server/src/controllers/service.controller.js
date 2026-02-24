@@ -73,7 +73,7 @@ export const createServiceRequest = async (req, res) => {
         pincode: finalPincode,
       };
 
-      if (saveAddress == true) {
+      if (saveAddress === "true" || saveAddress === true) {
         user.address.push(finalAddress);
         await user.save();
       }
@@ -151,17 +151,27 @@ export const createServiceRequest = async (req, res) => {
         },
       },
     }).select('_id');
+    console.log("nearby electricians found:", nearbyElectricians.length, nearbyElectricians);
 
     if (nearbyElectricians.length > 0) {
       const electricianIds = nearbyElectricians.map(e => e._id);
       const locationString = `${finalAddress.city}, ${finalAddress.state}`;
-      await NotificationService.notifyNewServiceRequest(
-        electricianIds, 
-        locationString, 
-        issueType
-      );
+      console.log("Creating notifications for electricians:", electricianIds);
+      
+      try {
+        const notifications = await NotificationService.notifyNewServiceRequest(
+          electricianIds, 
+          locationString, 
+          issueType
+        );
+        console.log("Notifications created successfully:", notifications.length);
+      } catch (notificationError) {
+        console.error("Failed to create notifications:", notificationError);
+      }
+    } else {
+      console.log("No nearby electricians found - no notifications created");
     }
-
+    console.log("service notified" );
     return res.status(201).json({
       success: true,
       message: "Service request created successfully",

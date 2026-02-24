@@ -14,13 +14,16 @@ export const createNotification = async (userId, title, message, type) => {
     // Emit real-time notification via Socket.IO
     const io = getSocketIO();
     if (io) {
-      io.to(`user:${userId}`).emit('newNotification', {
+      io.to(userId).emit('newNotification', {
         id: notification._id,
         title,
         message,
         type,
         createdAt: notification.createdAt,
       });
+      console.log(`Notification sent to user ${userId} via socket`);
+    } else {
+      console.log("Socket.IO not available, notification saved to database only");
     }
 
     return notification;
