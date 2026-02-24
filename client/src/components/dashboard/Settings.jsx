@@ -1,301 +1,276 @@
 import React, { useState } from 'react';
-import { FaBell, FaLock, FaPalette, FaGlobe, FaQuestionCircle, FaTrash, FaDownload, FaShieldAlt } from 'react-icons/fa';
+import { FaLock, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
+import axios from 'axios';
+import { serverUrl } from '../../App';
+import { toast } from 'react-toastify';
 
 const Settings = () => {
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    smsNotifications: false,
-    pushNotifications: true,
-    marketingEmails: false,
-    serviceUpdates: true,
-    promotions: false
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
   });
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [preferences, setPreferences] = useState({
-    language: 'english',
-    theme: 'light',
-    timezone: 'UTC-5',
-    currency: 'USD'
-  });
+  // Handle password change
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
 
-  const handleNotificationChange = (key) => {
-    setNotifications(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
+    if (passwordData.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axios.patch(
+        `${serverUrl}/api/user/change-password`,
+        {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success('Password changed successfully');
+        setShowPasswordModal(false);
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        toast.error(response.data.message || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      toast.error(error.response?.data?.message || 'Failed to change password');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handlePreferenceChange = (key, value) => {
-    setPreferences(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  // Handle account deletion
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== 'DELETE') {
+      toast.error('Please type DELETE exactly as shown');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axios.delete(
+        `${serverUrl}/api/user/delete-account`,
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        toast.success('Account deleted successfully');
+        // Redirect to login or home page
+        window.location.href = '/login';
+      } else {
+        toast.error(response.data.message || 'Failed to delete account');
+      }
+    } catch (error) {
+      console.error('Account deletion error:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete account');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Settings</h2>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">Account Settings</h2>
+        <p className="text-gray-600">Manage your account security and preferences</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Settings Navigation */}
-        <div className="lg:col-span-1">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-            <nav className="space-y-2">
-              <button className="w-full flex items-center gap-3 px-4 py-3 bg-yellow-50 text-yellow-700 rounded-xl font-medium">
-                <FaBell className="w-5 h-5" />
-                Notifications
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-xl font-medium">
-                <FaPalette className="w-5 h-5" />
-                Preferences
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-xl font-medium">
-                <FaLock className="w-5 h-5" />
-                Privacy & Security
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-xl font-medium">
-                <FaGlobe className="w-5 h-5" />
-                Language & Region
-              </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-xl font-medium">
-                <FaQuestionCircle className="w-5 h-5" />
-                Help & Support
-              </button>
-            </nav>
+      <div className="max-w-2xl mx-auto">
+        {/* Account Settings */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
+          <h3 className="text-xl font-bold text-gray-800 mb-6">Account Settings</h3>
+          
+          <div className="space-y-4">
+            {/* Change Password */}
+            <button 
+              onClick={() => setShowPasswordModal(true)}
+              className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <FaLock className="w-5 h-5 text-blue-600" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-gray-800">Change Password</h4>
+                  <p className="text-sm text-gray-600">Update your account password</p>
+                </div>
+              </div>
+              <span className="text-gray-400">→</span>
+            </button>
+
+            {/* Delete Account */}
+            <button 
+              onClick={() => setShowDeleteModal(true)}
+              className="w-full flex items-center justify-between p-4 border border-red-200 rounded-xl hover:bg-red-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <FaTrash className="w-5 h-5 text-red-600" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-red-600">Delete Account</h4>
+                  <p className="text-sm text-gray-600">Permanently delete your account</p>
+                </div>
+              </div>
+              <span className="text-red-400">→</span>
+            </button>
           </div>
         </div>
+      </div>
 
-        {/* Settings Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Notification Settings */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <FaBell className="w-5 h-5 text-yellow-500" />
-              Notification Preferences
-            </h3>
+      {/* Change Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Change Password</h3>
             
-            <div className="space-y-4">
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <h4 className="font-semibold text-gray-800">Email Notifications</h4>
-                  <p className="text-sm text-gray-600">Receive updates about your service requests via email</p>
-                </div>
-                <button
-                  onClick={() => handleNotificationChange('emailNotifications')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    notifications.emailNotifications ? 'bg-yellow-400' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      notifications.emailNotifications ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter current password"
+                />
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <h4 className="font-semibold text-gray-800">SMS Notifications</h4>
-                  <p className="text-sm text-gray-600">Get text messages for important updates</p>
-                </div>
-                <button
-                  onClick={() => handleNotificationChange('smsNotifications')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    notifications.smsNotifications ? 'bg-yellow-400' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      notifications.smsNotifications ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter new password"
+                />
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <h4 className="font-semibold text-gray-800">Push Notifications</h4>
-                  <p className="text-sm text-gray-600">Receive push notifications on your device</p>
-                </div>
-                <button
-                  onClick={() => handleNotificationChange('pushNotifications')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    notifications.pushNotifications ? 'bg-yellow-400' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      notifications.pushNotifications ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Confirm new password"
+                />
               </div>
 
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <h4 className="font-semibold text-gray-800">Service Updates</h4>
-                  <p className="text-sm text-gray-600">Updates about your ongoing service requests</p>
-                </div>
+              <div className="flex gap-3 pt-4">
                 <button
-                  onClick={() => handleNotificationChange('serviceUpdates')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    notifications.serviceUpdates ? 'bg-yellow-400' : 'bg-gray-300'
-                  }`}
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      notifications.serviceUpdates ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
+                  {isLoading ? 'Changing...' : 'Change Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordData({
+                      currentPassword: '',
+                      newPassword: '',
+                      confirmPassword: ''
+                    });
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-              <div className="flex items-center justify-between py-3">
-                <div>
-                  <h4 className="font-semibold text-gray-800">Marketing Emails</h4>
-                  <p className="text-sm text-gray-600">Receive promotional offers and updates</p>
-                </div>
-                <button
-                  onClick={() => handleNotificationChange('marketingEmails')}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    notifications.marketingEmails ? 'bg-yellow-400' : 'bg-gray-300'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      notifications.marketingEmails ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <FaExclamationTriangle className="w-6 h-6 text-red-600" />
+              <h3 className="text-xl font-bold text-gray-800">Delete Account</h3>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-600 mb-4">
+                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+              </p>
+              
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-800 font-medium mb-2">Warning:</p>
+                <ul className="text-xs text-red-700 space-y-1">
+                  <li>• All service requests will be deleted</li>
+                  <li>• Personal information will be removed</li>
+                  <li>• Account history will be lost</li>
+                  <li>• This action is irreversible</li>
+                </ul>
               </div>
             </div>
-          </div>
 
-          {/* Preferences */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <FaPalette className="w-5 h-5 text-blue-500" />
-              Preferences
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Language</label>
-                <select
-                  value={preferences.language}
-                  onChange={(e) => handlePreferenceChange('language', e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                >
-                  <option value="english">English</option>
-                  <option value="spanish">Spanish</option>
-                  <option value="french">French</option>
-                  <option value="german">German</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Theme</label>
-                <select
-                  value={preferences.theme}
-                  onChange={(e) => handlePreferenceChange('theme', e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="auto">Auto</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Timezone</label>
-                <select
-                  value={preferences.timezone}
-                  onChange={(e) => handlePreferenceChange('timezone', e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                >
-                  <option value="UTC-5">Eastern Time (UTC-5)</option>
-                  <option value="UTC-6">Central Time (UTC-6)</option>
-                  <option value="UTC-7">Mountain Time (UTC-7)</option>
-                  <option value="UTC-8">Pacific Time (UTC-8)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">Currency</label>
-                <select
-                  value={preferences.currency}
-                  onChange={(e) => handlePreferenceChange('currency', e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
-                >
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="INR">INR (₹)</option>
-                </select>
-              </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type <span className="font-bold text-red-600">DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="Type DELETE"
+              />
             </div>
-          </div>
 
-          {/* Privacy & Security */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <FaShieldAlt className="w-5 h-5 text-green-500" />
-              Privacy & Security
-            </h3>
-            
-            <div className="space-y-4">
-              <button className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <FaLock className="w-5 h-5 text-gray-600" />
-                  <div className="text-left">
-                    <h4 className="font-semibold text-gray-800">Change Password</h4>
-                    <p className="text-sm text-gray-600">Update your account password</p>
-                  </div>
-                </div>
-                <span className="text-gray-400">→</span>
+            <div className="flex gap-3">
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isLoading || deleteConfirmation !== 'DELETE'}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? 'Deleting...' : 'Delete Account'}
               </button>
-
-              <button className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <FaShieldAlt className="w-5 h-5 text-gray-600" />
-                  <div className="text-left">
-                    <h4 className="font-semibold text-gray-800">Two-Factor Authentication</h4>
-                    <p className="text-sm text-gray-600">Add an extra layer of security</p>
-                  </div>
-                </div>
-                <span className="text-gray-400">→</span>
-              </button>
-
-              <button className="w-full flex items-center justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <FaDownload className="w-5 h-5 text-gray-600" />
-                  <div className="text-left">
-                    <h4 className="font-semibold text-gray-800">Download My Data</h4>
-                    <p className="text-sm text-gray-600">Get a copy of your personal data</p>
-                  </div>
-                </div>
-                <span className="text-gray-400">→</span>
-              </button>
-
-              <button className="w-full flex items-center justify-between p-4 border border-red-200 rounded-xl hover:bg-red-50 transition-colors">
-                <div className="flex items-center gap-3">
-                  <FaTrash className="w-5 h-5 text-red-600" />
-                  <div className="text-left">
-                    <h4 className="font-semibold text-red-600">Delete Account</h4>
-                    <p className="text-sm text-gray-600">Permanently delete your account</p>
-                  </div>
-                </div>
-                <span className="text-red-400">→</span>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmation('');
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

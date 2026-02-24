@@ -5,22 +5,30 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { serverUrl } from '../../App';
 import { toast } from 'react-toastify';
+import { setRequestCounts } from '../../redux/userSlice';
 
 const Overview = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { requestCounts, userData } = useSelector((state) => state.user);
+  const { userData } = useSelector((state) => state.user);
   const [recentRequests, setRecentRequests] = useState([]);
+  const [localRequestCounts, setLocalRequestCounts] = useState({
+    pending: 0,
+    accepted: 0,
+    'in-progress': 0,
+    completed: 0,
+    cancelled: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
   
-  // Calculate total requests from Redux
-  const totalRequests = requestCounts.pending + requestCounts.accepted + 
-                        requestCounts['in-progress'] + requestCounts.completed + 
-                        requestCounts.cancelled;
+  // Calculate total requests from state
+  const totalRequests = localRequestCounts.pending + localRequestCounts.accepted + 
+                        localRequestCounts['in-progress'] + localRequestCounts.completed + 
+                        localRequestCounts.cancelled;
 
-  // Fetch recent requests
+  // Fetch request counts and recent requests
   useEffect(() => {
-    const fetchRecentRequests = async () => {
+    const fetchData = async () => {
       try {
         const response = await axios.get(
           `${serverUrl}/api/service/by-status`,
@@ -28,6 +36,27 @@ const Overview = () => {
         );
         
         if (response.data.success) {
+          // Update request counts from API response
+          const counts = response.data.counts;
+          
+          setLocalRequestCounts({
+            pending: counts.pending || 0,
+            accepted: counts.accepted || 0,
+            'in-progress': counts['in-progress'] || 0,
+            completed: counts.completed || 0,
+            cancelled: counts.cancelled || 0
+          });
+
+          // Update Redux state for consistency
+          dispatch(setRequestCounts({
+            pending: counts.pending || 0,
+            accepted: counts.accepted || 0,
+            'in-progress': counts['in-progress'] || 0,
+            completed: counts.completed || 0,
+            cancelled: counts.cancelled || 0,
+            total: (counts.pending || 0) + (counts.accepted || 0) + (counts['in-progress'] || 0) + (counts.completed || 0) + (counts.cancelled || 0)
+          }));
+          
           // Flatten all requests and sort by date (most recent first)
           const allRequests = [
             ...response.data.requests.pending,
@@ -45,15 +74,15 @@ const Overview = () => {
           setRecentRequests(sortedRequests);
         }
       } catch (error) {
-        console.error('Error fetching recent requests:', error);
-        toast.error('Failed to load recent requests');
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load dashboard data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchRecentRequests();
-  }, []);
+    fetchData();
+  }, [dispatch]);
 
   const stats = [
     {
@@ -67,7 +96,7 @@ const Overview = () => {
     },
     {
       title: 'Pending',
-      value: requestCounts.pending.toString(),
+      value: localRequestCounts.pending.toString(),
       icon: FaClock,
       color: 'from-yellow-400 to-amber-500',
       bgColor: 'bg-yellow-50',
@@ -76,7 +105,7 @@ const Overview = () => {
     },
     {
       title: 'Completed',
-      value: requestCounts.completed.toString(),
+      value: localRequestCounts.completed.toString(),
       icon: FaCheckCircle,
       color: 'from-green-400 to-green-500',
       bgColor: 'bg-green-50',
@@ -85,7 +114,7 @@ const Overview = () => {
     },
     {
       title: 'In Progress',
-      value: requestCounts['in-progress'].toString(),
+      value: localRequestCounts['in-progress'].toString(),
       icon: FaTools,
       color: 'from-purple-400 to-purple-500',
       bgColor: 'bg-purple-50',
