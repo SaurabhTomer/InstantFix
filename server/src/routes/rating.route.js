@@ -1,9 +1,16 @@
 import  express from 'express'
 import { authMiddleware, authorizeRoles } from '../middlewares/auth.middleware.js';
-import { createRating, deleteRating, updateRating } from '../controllers/rating.controller.js';
+import { createRating, deleteRating, updateRating, checkRatingExists } from '../controllers/rating.controller.js';
 
 
 const ratingRouter = express.Router();
+
+// Check if rating exists for a request
+ratingRouter.get(
+  "/check/:requestId",
+  authMiddleware,
+  checkRatingExists
+);
 
 // user rates a completed request
 ratingRouter.post(

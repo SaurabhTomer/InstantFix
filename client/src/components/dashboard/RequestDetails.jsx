@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaTools, FaBolt, FaLightbulb, FaPlug, FaFan, FaCalendar, FaMapMarkerAlt, FaUser, FaCheckCircle, FaExclamationTriangle, FaSpinner, FaClock, FaArrowLeft, FaEdit, FaTrash, FaImage, FaPhone, FaEnvelope, FaDollarSign, FaClipboardCheck, FaTimesCircle, FaStar, FaCommentDots, FaHistory, FaPlay, FaStop, FaBan, FaThumbsUp, FaExclamation } from 'react-icons/fa';
+import { FaTools, FaBolt, FaLightbulb, FaPlug, FaFan, FaCalendar, FaMapMarkerAlt, FaUser, FaCheckCircle, FaExclamationTriangle, FaSpinner, FaClock, FaArrowLeft, FaEdit, FaTrash, FaImage, FaPhone, FaEnvelope, FaDollarSign, FaClipboardCheck, FaTimesCircle, FaStar, FaCommentDots, FaHistory, FaPlay, FaStop, FaBan, FaThumbsUp, FaExclamation, FaCreditCard } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
 import { serverUrl } from '../../App';
 import { toast } from 'react-toastify';
 import { updateRequestCount } from '../../redux/userSlice';
+import RatingModal from './RatingModal';
+import PaymentModal from './PaymentModal';
 
 const RequestDetails = () => {
   const { requestId } = useParams();
@@ -14,6 +16,10 @@ const RequestDetails = () => {
   const [request, setRequest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  const [hasPaid, setHasPaid] = useState(false);
 
   const getServiceIcon = (serviceType) => {
     switch (serviceType?.toLowerCase()) {
@@ -153,6 +159,30 @@ const RequestDetails = () => {
         
         if (response.data.success) {
           setRequest(response.data.request);
+          
+          // Check if rating exists for this request
+          try {
+            const ratingResponse = await axios.get(
+              `${serverUrl}/api/ratings/check/${requestId}`,
+              { withCredentials: true }
+            );
+            setHasRated(ratingResponse.data.hasRating);
+          } catch (error) {
+            console.log('Rating check failed:', error);
+            setHasRated(false);
+          }
+          
+          // Check if payment exists for this request
+          try {
+            const paymentResponse = await axios.get(
+              `${serverUrl}/api/payment/check/${requestId}`,
+              { withCredentials: true }
+            );
+            setHasPaid(paymentResponse.data.hasPayment);
+          } catch (error) {
+            console.log('Payment check failed:', error);
+            setHasPaid(false);
+          }
         } else {
           toast.error('Request not found');
           navigate('/user');
@@ -170,6 +200,18 @@ const RequestDetails = () => {
       fetchRequestDetails();
     }
   }, [requestId, navigate]);
+
+  // Handle rating submission
+  const handleRatingSubmitted = (rating) => {
+    setHasRated(true);
+    toast.success('Thank you for rating the service!');
+  };
+
+  // Handle payment success
+  const handlePaymentSuccess = (payment) => {
+    setHasPaid(true);
+    toast.success('Payment completed successfully!');
+  };
 
   if (isLoading) {
     return (
@@ -445,6 +487,43 @@ const RequestDetails = () => {
                   </p>
                 </div>
 
+                {/* Rating and Payment Status for Completed Requests */}
+                {request.status === 'completed' && (
+                  <div className="space-y-2">
+                    <div className={`flex items-center justify-between p-3 rounded-lg border ${
+                      hasRated 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-yellow-50 border-yellow-200'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <FaStar className={`w-4 h-4 ${hasRated ? 'text-green-600' : 'text-yellow-600'}`} />
+                        <span className={`text-sm font-medium ${hasRated ? 'text-green-800' : 'text-yellow-800'}`}>
+                          Rating
+                        </span>
+                      </div>
+                      <span className={`text-xs font-bold ${hasRated ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {hasRated ? 'Completed' : 'Pending'}
+                      </span>
+                    </div>
+
+                    <div className={`flex items-center justify-between p-3 rounded-lg border ${
+                      hasPaid 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-blue-50 border-blue-200'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <FaCreditCard className={`w-4 h-4 ${hasPaid ? 'text-green-600' : 'text-blue-600'}`} />
+                        <span className={`text-sm font-medium ${hasPaid ? 'text-green-800' : 'text-blue-800'}`}>
+                          Payment
+                        </span>
+                      </div>
+                      <span className={`text-xs font-bold ${hasPaid ? 'text-green-600' : 'text-blue-600'}`}>
+                        {hasPaid ? 'Completed' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {request.updatedAt && (
                   <div className="bg-gray-50 rounded-lg p-3">
                     <label className="text-xs font-semibold text-gray-700 block mb-1">Last Updated</label>
@@ -527,11 +606,31 @@ const RequestDetails = () => {
                   
                   {request.status === 'completed' && (
                     <button 
-                      onClick={() => toast.info('Rating functionality coming soon')}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-yellow-500 to-amber-500 text-white font-bold rounded-xl hover:from-yellow-600 hover:to-amber-600 transition-all duration-300 transform hover:scale-105 shadow-md text-sm"
+                      onClick={() => setShowRatingModal(true)}
+                      disabled={hasRated}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md text-sm ${
+                        hasRated 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white hover:from-yellow-600 hover:to-amber-600'
+                      }`}
                     >
                       <FaStar className="w-4 h-4" />
-                      Rate Service
+                      {hasRated ? 'Already Rated' : 'Rate Service'}
+                    </button>
+                  )}
+                  
+                  {request.status === 'completed' && (
+                    <button 
+                      onClick={() => setShowPaymentModal(true)}
+                      disabled={hasPaid}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 font-bold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md text-sm ${
+                        hasPaid 
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                          : 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700'
+                      }`}
+                    >
+                      <FaCreditCard className="w-4 h-4" />
+                      {hasPaid ? 'Payment Completed' : 'Make Payment'}
                     </button>
                   )}
                   
@@ -556,6 +655,27 @@ const RequestDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Rating Modal */}
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        requestId={requestId}
+        electricianName={request?.electrician?.name || 'Electrician'}
+        serviceType={request?.serviceType || 'Service'}
+        onRatingSubmitted={handleRatingSubmitted}
+      />
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        requestId={requestId}
+        amount={request?.estimatedCost || 500} // Default amount if not set
+        electricianName={request?.electrician?.name || 'Electrician'}
+        serviceType={request?.serviceType || 'Service'}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 };

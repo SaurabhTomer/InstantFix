@@ -2,6 +2,39 @@ import Rating from "../models/rating.model.js";
 import ServiceRequest from "../models/serviceRequest.model.js";
 import User from '../models/user.model.js'
 
+// Check if rating exists for a request
+export const checkRatingExists = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const userId = req.user.id;
+
+    // Check if request exists and belongs to user
+    const request = await ServiceRequest.findById(requestId);
+    if (!request || request.customer.toString() !== userId) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found or not authorized",
+      });
+    }
+
+    // Check if rating exists
+    const existingRating = await Rating.findOne({ request: requestId });
+    
+    return res.status(200).json({
+      success: true,
+      hasRating: !!existingRating,
+      rating: existingRating
+    });
+
+  } catch (error) {
+    console.error("Check rating error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 //create rating 
 export const createRating = async (req, res) => {
   try {
@@ -11,6 +44,7 @@ export const createRating = async (req, res) => {
 
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({
+        success: false,
         message: "Rating must be between 1 and 5",
       });
     }
@@ -19,12 +53,14 @@ export const createRating = async (req, res) => {
 
     if (!request || request.status !== "completed") {
       return res.status(400).json({
+        success: false,
         message: "Rating allowed only after job completion",
       });
     }
 
     if (request.customer.toString() !== userId) {
       return res.status(403).json({
+        success: false,
         message: "Not authorized to rate this request",
       });
     }
@@ -33,6 +69,7 @@ export const createRating = async (req, res) => {
     const alreadyRated = await Rating.findOne({ request: requestId });
     if (alreadyRated) {
       return res.status(400).json({
+        success: false,
         message: "Rating already submitted",
       });
     }
@@ -65,6 +102,7 @@ export const createRating = async (req, res) => {
   } catch (error) {
     console.error("Create rating error:", error);
     res.status(500).json({
+      success: false,
       message: "Internal server error",
     });
   }
