@@ -9,7 +9,8 @@ const Overview = () => {
       icon: FaClipboardList,
       color: 'from-blue-400 to-blue-500',
       bgColor: 'bg-blue-50',
-      textColor: 'text-blue-600'
+      textColor: 'text-blue-600',
+      animationDelay: '0.1s'
     },
     {
       title: 'Pending',
@@ -17,7 +18,8 @@ const Overview = () => {
       icon: FaClock,
       color: 'from-yellow-400 to-amber-500',
       bgColor: 'bg-yellow-50',
-      textColor: 'text-yellow-600'
+      textColor: 'text-yellow-600',
+      animationDelay: '0.2s'
     },
     {
       title: 'Completed',
@@ -25,7 +27,8 @@ const Overview = () => {
       icon: FaCheckCircle,
       color: 'from-green-400 to-green-500',
       bgColor: 'bg-green-50',
-      textColor: 'text-green-600'
+      textColor: 'text-green-600',
+      animationDelay: '0.3s'
     },
     {
       title: 'In Progress',
@@ -33,7 +36,8 @@ const Overview = () => {
       icon: FaTools,
       color: 'from-purple-400 to-purple-500',
       bgColor: 'bg-purple-50',
-      textColor: 'text-purple-600'
+      textColor: 'text-purple-600',
+      animationDelay: '0.4s'
     }
   ];
 
@@ -89,10 +93,34 @@ const Overview = () => {
 
   return (
     <div>
+      {/* Add CSS animations */}
+      <style>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes icon-bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-5px);
+          }
+        }
+      `}</style>
+      
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Dashboard Overview</h2>
-        <p className="text-gray-600">Welcome back! Here's what's happening with your electrical service requests.</p>
+        <h2 className="text-4xl font-bold text-gray-800 mb-2">
+          Welcome back, <span className="bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent">John Doe</span>
+        </h2>
       </div>
 
       {/* Stats Grid */}
@@ -100,14 +128,29 @@ const Overview = () => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div key={index} className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow">
+            <div 
+              key={index} 
+              className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              style={{
+                animation: `slide-up 0.5s ease-out ${stat.animationDelay} both`
+              }}
+            >
               <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg`}>
+                <div 
+                  className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform duration-300`}
+                  style={{
+                    animation: `icon-bounce 2s ease-in-out ${stat.animationDelay} infinite`
+                  }}
+                >
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                <span className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</span>
+                <span className={`text-2xl font-bold ${stat.textColor} transition-transform duration-300 hover:scale-110`}>
+                  {stat.value}
+                </span>
               </div>
-              <h3 className="text-gray-700 font-semibold">{stat.title}</h3>
+              <h3 className="text-gray-700 font-semibold transition-colors duration-300 hover:text-gray-900">
+                {stat.title}
+              </h3>
             </div>
           );
         })}
