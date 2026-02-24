@@ -7,6 +7,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import CreateRequest from './pages/CreateRequest';
 import Home from './pages/Home';
 import UserDashboardPage from './pages/UserDashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import useGetLocation from './hook/UseGetLocation';
 
 // Server URL
@@ -37,6 +38,7 @@ const App = () => {
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/create-request' element={<CreateRequest />} />
         <Route path='/dashboard' element={<UserDashboardPage />} />
+        <Route path='/admin' element={<AdminDashboardPage />} />
       </Routes>
     </>
   )
