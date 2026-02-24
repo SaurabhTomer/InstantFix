@@ -4,6 +4,7 @@ import SignUp from './pages/SignUp'
 import {ToastContainer} from "react-toastify"
 import SignIn from './pages/SignIn';
 import ForgotPassword from './pages/ForgotPassword';
+import CreateRequest from './pages/CreateRequest';
 
 // Server URL
 export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
@@ -25,6 +26,7 @@ const App = () => {
         <Route path='/signup' element={<SignUp />} />
         <Route path='/signin' element={<SignIn />} />
         <Route path='/forgot-password' element={<ForgotPassword />} />
+        <Route path='/create-request' element={<CreateRequest />} />
       </Routes>
     </>
   )

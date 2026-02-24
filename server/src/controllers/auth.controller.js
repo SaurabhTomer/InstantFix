@@ -1,112 +1,58 @@
 import User from "../models/user.model.js";
-
 import bcrypt from "bcrypt";
-
 import jwt from "jsonwebtoken";
-
 import redis from "../config/redis.js";
-
 import { sendOtpEmail, sendWelcomeEmail } from "../utils/sendEmail.js";
 
 
 
 //signup
 export const signup = async (req, res) => {
-
   try {
-
     const { name, email, phone, password, role } = req.body;
 
-
-
-    // 1️⃣ Validation
-
     if (!name || !email || !phone || !password) {
-
       return res.status(400).json({ msg: "All fields are required" });
-
     }
 
 
-
-    // 2️⃣ Check existing user
-
     const existingUser = await User.findOne({
-
       $or: [{ email }, { phone }]
-
     });
-
 
 
     if (existingUser) {
-
       return res.status(409).json({ msg: "User already exists" });
-
     }
-
-
-
-    // 3️⃣ Hash password
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-
-
-    // 4️⃣ Create user
-
     const user = await User.create({
-
       name,
-
       email,
-
       phone,
-
       password: hashedPassword,
-
       role,
-
       approvalStatus: role === "ELECTRICIAN" ? "pending" : "approved",
 
-      // address is optional at signup
 
     });
 
-
-
-    // 5️⃣ Generate JWT
-
     const token = jwt.sign(
-
       {
-
         id: user._id,
-
         role: user.role
-
       },
-
       process.env.JWT_SECRET,
-
       { expiresIn: "7d" }
-
     );
 
 
-
-    // 6️⃣ Set cookie
-
     res.cookie("token", token, {
-
       httpOnly: true,
-
       secure: false,        // true in production (HTTPS)
-
       sameSite: "lax",
-
       maxAge: 7 * 24 * 60 * 60 * 1000
-
     });
 
     sendWelcomeEmail(user.email, user.name)
@@ -115,7 +61,6 @@ export const signup = async (req, res) => {
       });
 
 
-    // 7️⃣ Send response
 
     res.status(201).json({
       success: true,
@@ -128,27 +73,18 @@ export const signup = async (req, res) => {
         approvalStatus: user.approvalStatus
       }
     });
-
   } catch (error) {
-
     console.error(error);
-
     res.status(500).json({ msg: "Server error" });
-
   }
-
 };
 
 
 
 //login
 export const login = async (req, res) => {
-
   try {
-
     const { email, password } = req.body;
-
-    // 1️⃣ Validation
 
     if (!email || !password) {
       return res
@@ -156,7 +92,7 @@ export const login = async (req, res) => {
         .json({ msg: "Email/Phone and password are required" });
     }
 
-    // 2️⃣ Find user
+
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
@@ -171,13 +107,12 @@ export const login = async (req, res) => {
       });
     }
 
-    // 3️⃣ Compare password
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ msg: "Invalid credentials" });
     }
 
-    // 4️⃣ Generate JWT
     const token = jwt.sign(
       {
         id: user._id,
@@ -195,122 +130,63 @@ export const login = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
-
-    // 6️⃣ Send response
-
     res.json({
-
       success: true,
-
       user: {
-
         id: user._id,
-
         name: user.name,
-
         email: user.email,
-
         phone: user.phone,
-
         role: user.role,
-
         address: user.address,
-
         approvalStatus: user.approvalStatus,
-
       }
-
     });
-
   } catch (error) {
-
     console.error(error);
-
-    res.status(500).json({ msg: "Server error" });
-
+    res.status(500).json({ msg: "Server error" })
   }
-
 };
 
 
-
-
-
 //Logout controller
-
 export const Logout = async (req, res) => {
-
   try {
-
     const token = req.cookies?.token;
-
-
-
     if (!token) {
-
       return res.status(400).json({ message: "Token not provided" });
-
     }
 
-
-
     // decode token to get expiry
-
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-
-
     // till this keep this token 
-
     const ttl = decoded.exp - Math.floor(Date.now() / 1000);
-
-
-
     // blacklist token in redis
-
     await redis.set(`blacklist:${token}`, "true", "EX", ttl);
 
-
-
     // clear cookie if exists
-
     res.clearCookie("token", {
-
       httpOnly: true,
-
       secure: true,
-
       sameSite: "strict",
-
     });
-
     // console.log(token);
 
-
-
     return res.status(200).json({
-
       message: "Logout successful",
-
     });
-
   } catch (error) {
-
     console.error(error);
-
     return res.status(401).json({ message: "Invalid or expired token" });
-
   }
-
 };
 
 
 
 //SEND OTP
 export const sendOTP = async (req, res) => {
-
   try {
-
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ message: "Email is required" });
@@ -323,7 +199,6 @@ export const sendOTP = async (req, res) => {
       });
     }
 
-    // generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log(otp);
 
@@ -337,7 +212,6 @@ export const sendOTP = async (req, res) => {
     );
     // console.log(otp);
 
-    // after generating otp
     sendOtpEmail(email, otp)
       .catch(err => console.error("send otp failed:", err));
 
@@ -357,7 +231,6 @@ export const sendOTP = async (req, res) => {
 export const resendEmailOtp = async (req, res) => {
   try {
     const { email } = req.body;
-    // 1. Validate
 
     if (!email) {
       return res.status(400).json({
@@ -366,7 +239,7 @@ export const resendEmailOtp = async (req, res) => {
     }
 
     const redisKey = `otp:${email}`;
-    // 2. Prevent OTP spam (check existing OTP)
+    //  Prevent OTP spam (check existing OTP)
     const existingOtp = await redis.get(redisKey);
 
     if (existingOtp) {
@@ -377,14 +250,13 @@ export const resendEmailOtp = async (req, res) => {
       });
     }
 
-    // 3. Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log("resend otp " , otp);
-    // 4. Store OTP 
+    
 
     await redis.set(redisKey, otp, "EX", 5 * 60);
 
-    // 5. Send OTP email (NON-BLOCKING)
+    //  Send OTP email (NON-BLOCKING)
     sendOtpEmail(email, otp)
       .catch(err => console.error("Resend email OTP failed:", err));
 
@@ -428,7 +300,7 @@ export const verifyOtp = async (req, res) => {
       });
     }
 
-    await redis.del(`otp:${email}`); // OTP used once
+    await redis.del(`otp:${email}`); 
 
     await redis.set(
       `otp_verified:${email}`,
@@ -455,7 +327,6 @@ export const resetPassword = async (req, res) => {
   try {
     const { email, newPassword } = req.body;
 
-    // 1️⃣ Validate input
     if (!email || !newPassword) {
       return res.status(400).json({
         message: "Email and new password are required",
@@ -469,7 +340,6 @@ export const resetPassword = async (req, res) => {
     }
     // console.log("body" , req.body)
 
-    // 2️⃣ Check OTP verification flag (Redis)
     const isVerified = await redis.get(`otp_verified:${email}`);
 
     if (!isVerified) {
@@ -477,12 +347,9 @@ export const resetPassword = async (req, res) => {
         message: "OTP not verified or reset window expired",
       });
     }
+    // console.log(isVerified);
 
-    console.log(isVerified);
-// Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // 4️⃣ Update password in MongoDB
 
     const user = await User.findOneAndUpdate(
       { email },
@@ -496,9 +363,8 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    // Cleanup Redis keys
-    await redis.del(`sendotp_verified:${email}`);
-    await redis.del(`send_otp:${email}`); // safety cleanup
+    await redis.del(`otp_verified:${email}`);
+    await redis.del(`otp:${email}`); 
 
     return res.status(200).json({
       message: "Password reset successful",
