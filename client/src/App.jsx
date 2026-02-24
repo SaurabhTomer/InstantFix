@@ -5,12 +5,17 @@ import {ToastContainer} from "react-toastify"
 import SignIn from './pages/SignIn';
 import ForgotPassword from './pages/ForgotPassword';
 import CreateRequest from './pages/CreateRequest';
+import useGetLocation from './hook/UseGetLocation';
 
 // Server URL
 export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
 
 
 const App = () => {
+
+//hook
+  useGetLocation();
+  
   return (
     <>
 

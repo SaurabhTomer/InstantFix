@@ -7,7 +7,11 @@ const userSlice = createSlice({
     currentCity: null,
     currentState: null,
     currentAddress: null,
-
+     location:{
+        lat:null,
+        lon:null
+       },
+       address:null
   },
   reducers: {
     setUserData: (state, action) => {
@@ -21,7 +25,17 @@ const userSlice = createSlice({
     },
     setCurrentAddress: (state, action) => {
       state.currentAddress = action.payload;
-    }
+    },
+      setLocation:(state,action)=>{
+        //data comes but no store in state
+        const {lat,lon}=action.payload
+        //now store in state
+        state.location.lat=lat
+        state.location.lon=lon
+       },
+       setAddress:(state,action)=>{
+        state.address=action.payload
+       }
   },
 });
 
@@ -30,6 +44,8 @@ export const {
   setCurrentAddress,
   setCurrentCity,
   setCurrentState,
+  setLocation,
+  setAddress
 
 } = userSlice.actions;
 export default userSlice.reducer;
