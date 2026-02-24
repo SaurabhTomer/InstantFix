@@ -1,54 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import axios from 'axios';
+import { serverUrl } from '../../App';
+import { setUserData } from '../../redux/userSlice';
+import { useDispatch } from 'react-redux';
+import { toast } from 'react-toastify';
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useDispatch();
   const { userData, currentCity, currentState, currentAddress, currentPincode } = useSelector((state) => state.user);
 
   const [formData, setFormData] = useState({
-    Name: userData?.user?.name?.split(' ')[0] || 'John',
-    email: userData?.user?.email || 'john.doe@example.com',
-    phone: userData?.user?.phone || '+1 234 567 8900',
-    address: currentAddress || '123 Main Street, Apt 4B',
-    city: currentCity || 'New York',
-    state: currentState || 'NY',
-    pincode: currentPincode || '10001',
-    bio: userData?.bio || 'Homeowner looking for reliable electrical services'
+  name: userData?.user?.name || 'John Doe',
+  email: userData?.user?.email || 'john.doe@example.com',
+  phone: userData?.user?.phone || '+1 234 567 8900',
+  address: currentAddress || '123 Main Street, Apt 4B',
+  city: currentCity || 'New York',
+  state: currentState || 'NY',
+  pincode: currentPincode || '10001'
+});
+
+// Store original data for cancel functionality
+const [originalData, setOriginalData] = useState(formData);
+
+// Update form data when userData or location data changes
+useEffect(() => {
+  if (userData || currentCity || currentState) {
+    const newFormData = {
+      name: userData?.user?.name || 'John Doe',
+      email: userData?.user?.email || 'john.doe@example.com',
+      phone: userData?.user?.phone || '+1 234 567 8900',
+      address: currentAddress || '123 Main Street, Apt 4B',
+      city: currentCity || 'New York',
+      state: currentState || 'NY',
+      pincode: currentPincode || '10001'
+    };
+    setFormData(newFormData);
+    setOriginalData(newFormData);
+  }
+}, [userData, currentCity, currentState, currentAddress, currentPincode]);
+
+const handleInputChange = (e) => {
+  setFormData({
+    ...formData,
+    [e.target.name]: e.target.value
   });
+};
 
-  // Update form data when userData or location data changes
-  useEffect(() => {
-    if (userData || currentCity || currentState) {
-      setFormData({
-      Name: userData?.user?.name?.split(' ')[0] || 'John',
-        email: userData?.user?.email || 'john.doe@example.com',
-        phone: userData?.user?.phone || '+1 234 567 8900',
-        address: currentAddress || '123 Main Street, Apt 4B',
-        city: currentCity || 'New York',
-        state: currentState || 'NY',
-        pincode: currentPincode || '10001',
-        bio: userData?.bio || 'Homeowner looking for reliable electrical services'
-      });
+const handleSave = async () => {
+  setIsLoading(true);
+  try {
+    const updateData = {
+      name: formData.name,
+      phone: formData.phone,
+      // Add any other fields your backend accepts for update
+    };
+
+    const response = await axios.patch(
+      `${serverUrl}/api/user/update`,
+      updateData,
+      { withCredentials: true }
+    );
+
+    if (response.data.success) {
+      // Update Redux store with new user data
+      dispatch(setUserData(response.data.user));
+      
+      // Update original data
+      setOriginalData(formData);
+      
+      setIsEditing(false);
+      toast.success('Profile updated successfully!');
     }
-  }, [userData, currentCity, currentState, currentAddress, currentPincode]);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    toast.error(error.response?.data?.message || 'Failed to update profile');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-  const handleInputChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSave = () => {
-    // Here you would normally save the data
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    // Reset to original values
-    setIsEditing(false);
-  };
+const handleCancel = () => {
+  // Reset to original values
+  setFormData(originalData);
+  setIsEditing(false);
+};
 
   return (
     <div>
@@ -74,7 +113,7 @@ const Profile = () => {
               </div>
 
               <h3 className="text-xl font-bold text-gray-800 mb-1">
-                {formData.Name}
+                {formData.name}
               </h3>
               <p className="text-gray-600 mb-4">{formData.email}</p>
 
@@ -130,14 +169,16 @@ const Profile = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FaSave className="w-4 h-4" />
-                    Save
+                    {isLoading ? 'Saving...' : 'Save'}
                   </button>
                   <button
                     onClick={handleCancel}
-                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <FaTimes className="w-4 h-4" />
                     Cancel
@@ -147,18 +188,18 @@ const Profile = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* First Name */}
+              {/* Name */}
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
                   <FaUser className="w-4 h-4 text-blue-500" />
-                  First Name
+                  Full Name
                 </label>
                 <input
                   type="text"
-                  name="Name"
-                  value={formData.Name}
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isLoading}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-600"
                 />
               </div>
@@ -175,9 +216,10 @@ const Profile = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
+                  disabled={true} // Email cannot be changed for security
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-600"
                 />
+                <p className="text-xs text-gray-500 mt-1">Email cannot be changed. Contact support for changes.</p>
               </div>
 
               {/* Phone */}
@@ -191,7 +233,7 @@ const Profile = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isLoading}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-600"
                 />
               </div>
