@@ -1,6 +1,5 @@
 
-console.log("🚀🚀🚀 RELOAD CHECK 🚀🚀🚀");
-console.log("🚀🚀🚀 RELOAD CHECK 🚀🚀🚀");
+
 import dotenv from 'dotenv'
 dotenv.config()
 import express from 'express'
@@ -21,7 +20,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 
-console.log("🔥 LIVE RELOAD WORKING");
+
 
 
 
@@ -34,12 +33,12 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Request logging middleware
-if (process.env.NODE_ENV === 'development') {
-    app.use(morgan('dev'));
-} else {
-    app.use(morgan('combined'));
-}
+// // Request logging middleware
+// if (process.env.NODE_ENV === 'development') {
+//     app.use(morgan('dev'));
+// } else {
+//     app.use(morgan('combined'));
+// }
 
 app.use(cookieParser());
 app.use(express.json())
@@ -77,7 +76,7 @@ const server = http.createServer(app);
 //  socket goes HERE
 initSocket(server);
 
-console.log("🔥 LIVE RELOAD TEST");
+
 
 server.listen(port , () => {
     console.log(`server running at ${port}`)

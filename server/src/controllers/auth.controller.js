@@ -325,7 +325,7 @@ export const sendOTP = async (req, res) => {
 
     // generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // console.log(otp);
+    console.log(otp);
 
     const rediskey = `otp:${email}`;
     console.log(redis.options.host);
@@ -379,7 +379,7 @@ export const resendEmailOtp = async (req, res) => {
 
     // 3. Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // console.log(otp);
+    console.log("resend otp " , otp);
     // 4. Store OTP 
 
     await redis.set(redisKey, otp, "EX", 5 * 60);
@@ -467,15 +467,18 @@ export const resetPassword = async (req, res) => {
         message: "Password must be at least 8 characters",
       });
     }
+    // console.log("body" , req.body)
 
     // 2️⃣ Check OTP verification flag (Redis)
-    const isVerified = await redis.get(`sendotp_verified:${email}`);
+    const isVerified = await redis.get(`otp_verified:${email}`);
 
     if (!isVerified) {
       return res.status(403).json({
         message: "OTP not verified or reset window expired",
       });
     }
+
+    console.log(isVerified);
 // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 

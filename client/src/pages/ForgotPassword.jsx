@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { serverUrl } from "../App";
 import { ClipLoader } from "react-spinners";
 import { toast } from "react-toastify";
+import { useEffect } from "react";
 
 function ForgotPassword() {
 
@@ -14,6 +15,7 @@ function ForgotPassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [timer, setTimer] = useState(0);
 
   const navigate = useNavigate();
 
@@ -31,6 +33,7 @@ function ForgotPassword() {
 
       toast.success("OTP sent to your email 📩");
       setStep(2);
+      setTimer(5 * 60);   // 👈 start 60 sec timer
 
     } catch (error) {
       toast.error(error?.response?.data?.message || "Send OTP failed");
@@ -53,6 +56,7 @@ function ForgotPassword() {
 
       toast.success("OTP verified ✅");
       setStep(3);
+      
 
     } catch (error) {
       toast.error(error?.response?.data?.message || "Invalid OTP");
@@ -60,6 +64,28 @@ function ForgotPassword() {
       setLoading(false);
     }
   };
+
+  //resend otp
+  const handleResendOtp = async () => {
+  if (timer > 0) return;
+
+  setLoading(true);
+  try {
+    await axios.post(
+      `${serverUrl}/api/auth/resend-otp`,
+      { email },
+      { withCredentials: true }
+    );
+
+    toast.success("OTP Resent Successfully 🔁");
+    setTimer(5 * 60);
+
+  } catch (error) {
+    toast.error(error?.response?.data?.message || "Resend failed");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Reset Password
   const handleResetPassword = async () => {
@@ -87,6 +113,18 @@ function ForgotPassword() {
     }
   };
 
+
+        useEffect(() => {
+    let interval;
+
+    if (timer > 0) {
+        interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+        }, 1000);
+    }
+
+    return () => clearInterval(interval);
+    }, [timer]);
   return (
     <div className="flex w-full items-center justify-center min-h-screen p-4 bg-blue-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-8 border border-blue-200">
@@ -151,6 +189,21 @@ function ForgotPassword() {
             >
               {loading ? <ClipLoader size={20} color="white" /> : "Verify OTP"}
             </button>
+
+            <div className="text-center mt-4">
+            {timer > 0 ? (
+                <p className="text-gray-500 text-sm">
+                Resend OTP in <span className="text-yellow-500 font-semibold">{timer}s</span>
+                </p>
+            ) : (
+                <button
+                className="text-blue-600 font-semibold hover:text-yellow-500 transition"
+                onClick={handleResendOtp}
+                >
+                Resend OTP
+                </button>
+            )}
+            </div>
           </>
         )}
 
