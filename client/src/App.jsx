@@ -9,7 +9,8 @@ import Home from './pages/Home';
 import UserDashboardPage from './pages/UserDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ElectricianDashboardPage from './pages/ElectricianDashboardPage';
-import useGetLocation from './hook/UseGetLocation';
+import UseGetLocation from './hook/UseGetLocation';
+import UseGetUser from './hook/UseGetUser';
 
 // Server URL
 export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
@@ -18,7 +19,8 @@ export const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:30
 const App = () => {
 
 //hook
-  useGetLocation();
+  UseGetLocation();
+  UseGetUser();
   
   return (
     <>

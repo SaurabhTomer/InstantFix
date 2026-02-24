@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaBolt, FaHome, FaTools, FaClipboardList, FaUser, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { useSelector } from 'react-redux';
 
 const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
   const menuItems = [
@@ -9,6 +10,8 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
     { id: 'profile', label: 'Profile', icon: FaUser },
     { id: 'settings', label: 'Settings', icon: FaCog },
   ];
+
+  const {userData} = useSelector((state) => state.user)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-blue-50">
@@ -70,8 +73,8 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
                   <FaUser className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-800">John Doe</p>
-                  <p className="text-xs text-gray-600">john.doe@example.com</p>
+                  <p className="font-semibold text-gray-800">{userData?.name}</p>
+                  <p className="text-xs text-gray-600">{userData?.email}</p>
                 </div>
               </div>
               <button className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
