@@ -3,6 +3,7 @@ import Payment from "../models/payment.model.js";
 import razorpay from "../utils/razorpay.js";
 import crypto from "crypto";
 import ServiceRequest from "../models/serviceRequest.model.js";
+import NotificationService from "../utils/notificationService.js";
 
 // create payment order
 export const createOrder = async (req, res) => {
@@ -201,6 +202,9 @@ async function handlePaymentSuccess(paymentData) {
 
     console.log("Payment processed successfully:", paymentData.id);
 
+    // Create payment success notification
+    await NotificationService.notifyPaymentSuccessful(payment.user, payment.amount);
+
     // TODO: Send payment confirmation email
     // TODO: Emit socket event to user
 
@@ -220,6 +224,9 @@ async function handlePaymentFailure(paymentData) {
       payment.status = "failed";
       payment.failureReason = paymentData.error?.description || "Payment failed";
       await payment.save();
+
+      // Create payment failure notification
+      await NotificationService.notifyPaymentFailed(payment.user, payment.amount);
     }
 
     console.log("Payment failed:", paymentData.id);

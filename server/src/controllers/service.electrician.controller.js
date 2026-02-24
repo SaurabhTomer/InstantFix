@@ -1,4 +1,4 @@
-import Notification from "../models/notification.model.js";
+import NotificationService from "../utils/notificationService.js";
 import ServiceRequest from "../models/serviceRequest.model.js";
 import User from '../models/user.model.js'
 import { getIO } from "../socket/socket.js";
@@ -40,12 +40,7 @@ export const acceptRequest = async (req, res) => {
     }
 
     // create notification
-    await Notification.create({
-      user: request.customer,
-      title: "Service Completed",
-      message: "Your service has been completed successfully.",
-      type: "REQUEST_COMPLETED",
-    });
+    await NotificationService.notifyRequestAccepted(request.customer, electrician.name);
 
     
     console.log("✅ REQUEST ACCEPTED:", {
@@ -60,7 +55,7 @@ export const acceptRequest = async (req, res) => {
       .to(request.customer.toString())
       .emit("REQUEST_STATUS_UPDATED", {
         requestId: request._id,
-        status: "completed",
+        status: "accepted",
         electricianId,
       });
 
@@ -481,6 +476,9 @@ export const startJob = async (req, res) => {
     request.startedAt = new Date();
     await request.save();
 
+    // create notification
+    await NotificationService.notifyRequestStarted(request.customer, electrician.name);
+
     //  notify user
     getIO()
       .to(request.customer.toString())
@@ -527,12 +525,8 @@ export const completeJob = async (req, res) => {
     request.completedAt = new Date();
     await request.save();
 
-    await Notification.create({
-      user: request.customer,
-      title: "Service Completed",
-      message: "Your service has been completed successfully.",
-      type: "REQUEST_COMPLETED",
-    });
+    // create notification
+    await NotificationService.notifyRequestCompleted(request.customer, electrician.name);
 
     // notify user
     getIO()

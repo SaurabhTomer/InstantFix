@@ -2,6 +2,7 @@ import User from '../models/user.model.js'
 import ServiceRequest from "../models/serviceRequest.model.js";
 import { getIO } from '../socket/socket.js';
 import { sendElectricianApprovedMail, sendElectricianRejectedMail } from '../utils/sendEmail.js';
+import NotificationService from '../utils/notificationService.js';
 
 //approve electrician 
 export const approveElectrician = async (req, res) => {
@@ -37,6 +38,8 @@ export const approveElectrician = async (req, res) => {
         electrician.approvalStatus = "approved";
         await electrician.save();
 
+        // Create notification for electrician
+        await NotificationService.notifyElectricianApproved(electrician._id);
 
         //  Real-time socket notify 
         try {
@@ -112,6 +115,8 @@ export const rejectElectrician = async (req, res) => {
         electrician.approvalStatus = "rejected";
         await electrician.save();
 
+        // Create notification for electrician
+        await NotificationService.notifyElectricianRejected(electrician._id, "Your electrician account has been rejected by admin");
 
         //  Real-time socket notify 
         try {

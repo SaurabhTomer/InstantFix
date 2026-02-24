@@ -1,9 +1,7 @@
 import cloudinary from "../utils/claudinary.js";
-
+import NotificationService from "../utils/notificationService.js";
 import User from '../models/user.model.js'
-
 import ServiceRequest from "../models/serviceRequest.model.js"
-
 
 
 //create request
@@ -136,6 +134,33 @@ export const createServiceRequest = async (req, res) => {
       },
       images: imageUrls,
     });
+
+    // Notify nearby electricians about new service request
+    // Find nearby approved electricians
+    const nearbyElectricians = await User.find({
+      role: "ELECTRICIAN",
+      approvalStatus: "approved",
+      isAvailable: true,
+      location: {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: finalCoordinates,
+          },
+          $maxDistance: 10000, // 10km radius
+        },
+      },
+    }).select('_id');
+
+    if (nearbyElectricians.length > 0) {
+      const electricianIds = nearbyElectricians.map(e => e._id);
+      const locationString = `${finalAddress.city}, ${finalAddress.state}`;
+      await NotificationService.notifyNewServiceRequest(
+        electricianIds, 
+        locationString, 
+        issueType
+      );
+    }
 
     return res.status(201).json({
       success: true,
@@ -357,7 +382,8 @@ export const cancelServiceRequest = async (req, res) => {
 
     await request.save();
 
-
+    // Notify user about cancellation
+    await NotificationService.notifyRequestCancelled(userId, "You cancelled the service request");
 
     return res.status(200).json({
 

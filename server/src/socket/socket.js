@@ -49,3 +49,8 @@ export const getIO = () => {
   }
   return io;
 };
+
+/**
+ * Alias for getIO to match notification service import
+ */
+export const getSocketIO = getIO;
