@@ -354,7 +354,6 @@ export const getMyRequestById = async (req, res) => {
 };
 
 
-
 //cancel service request by user
 
 export const cancelServiceRequest = async (req, res) => {
@@ -383,6 +382,8 @@ export const cancelServiceRequest = async (req, res) => {
 
       return res.status(404).json({
 
+        success: false,
+
         message: "Request not found",
 
       });
@@ -396,6 +397,8 @@ export const cancelServiceRequest = async (req, res) => {
     if (request.status !== "pending") {
 
       return res.status(400).json({
+
+        success: false,
 
         message: `Cannot cancel request in '${request.status}' state`,
 
@@ -432,10 +435,42 @@ export const cancelServiceRequest = async (req, res) => {
 
     return res.status(500).json({
 
+      success: false,
+
       message: "Internal server error",
 
     });
 
   }
+};
 
+// Get single request by ID
+export const getRequestById = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const userId = req.user.id;
+
+    // Find the request belonging to the user
+    const request = await ServiceRequest.findOne({ _id: requestId, user: userId })
+      .populate('electrician', 'name email phone')
+      .populate('user', 'name email phone');
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: "Request not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      request
+    });
+  } catch (error) {
+    console.error("Get request by ID error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
 };

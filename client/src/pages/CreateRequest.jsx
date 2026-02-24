@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { IoIosArrowRoundBack } from "react-icons/io";
-import { FaTools, FaBolt, FaMapMarkerAlt, FaCamera, FaFileImage, FaCheckCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { FaTools, FaLightbulb, FaFan, FaBolt, FaPlug, FaCamera, FaMapMarkerAlt, FaPlus, FaMinus, FaTrash, FaFileImage } from "react-icons/fa";
+import { IoIosArrowRoundBack } from "react-icons/io";
+import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import { serverUrl } from "../App";
-import { ClipLoader } from "react-spinners";
 import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
+import { updateRequestCount } from "../redux/userSlice";
+import { ClipLoader } from "react-spinners";
 
 function CreateServiceRequest() {
 
@@ -20,6 +21,7 @@ function CreateServiceRequest() {
 
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const dispatch = useDispatch();
 
     const [issueType, setIssueType] = useState("");
     const [description, setDescription] = useState("");
@@ -109,7 +111,10 @@ function CreateServiceRequest() {
                 { withCredentials: true }
             );
 
-            toast.success("Service request created 🚀");
+            // Increment pending count in Redux
+            dispatch(updateRequestCount({ status: 'pending', increment: 1 }));
+
+            toast.success("Service request created ");
             navigate("/user");
 
         } catch (error) {

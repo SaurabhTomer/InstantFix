@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import UserDashboardPage from './pages/UserDashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ElectricianDashboardPage from './pages/ElectricianDashboardPage';
+import RequestDetails from './components/dashboard/RequestDetails';
 import UseGetLocation from './hook/UseGetLocation';
 import UseGetUser from './hook/UseGetUser';
 
@@ -41,6 +42,7 @@ const App = () => {
         <Route path='/forgot-password' element={<ForgotPassword />} />
         <Route path='/create-request' element={<CreateRequest />} />
         <Route path='/user' element={<UserDashboardPage />} />
+        <Route path='/user/requests/:requestId' element={<RequestDetails />} />
         <Route path='/admin' element={<AdminDashboardPage />} />
         <Route path='/electrician' element={<ElectricianDashboardPage />} />
       </Routes>

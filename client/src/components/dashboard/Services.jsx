@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { FaTools, FaBolt, FaLightbulb, FaPlug, FaFan, FaCalendar, FaMapMarkerAlt, FaUser, FaCheckCircle, FaExclamationTriangle, FaSpinner, FaClock } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
 import { serverUrl } from '../../App';
 import { toast } from 'react-toastify';
+import { setRequestCounts } from '../../redux/userSlice';
 
 const Services = () => {
   const [userRequests, setUserRequests] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const { userData } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
 
   const statusColumns = [
     { 
@@ -82,10 +84,14 @@ const Services = () => {
           `${serverUrl}/api/service/by-status`,
           { withCredentials: true }
         );
-        console.log(response);
+        // console.log(response);
         
         if (response.data.success) {
           setUserRequests(response.data.requests || {});
+          // Save counts to Redux
+          if (response.data.counts) {
+            dispatch(setRequestCounts(response.data.counts));
+          }
         }
       } catch (error) {
         console.error('Error fetching user requests:', error);
@@ -96,7 +102,7 @@ const Services = () => {
     };
 
     fetchUserRequests();
-  }, []);
+  }, [dispatch]);
 
   // Group requests by status
   const getRequestsByStatus = (status) => {

@@ -12,7 +12,15 @@ const userSlice = createSlice({
             longitude: null
         },
         currentPincode: null,
-        address: null
+        address: null,
+        requestCounts: {
+            pending: 0,
+            accepted: 0,
+            'in-progress': 0,
+            completed: 0,
+            cancelled: 0,
+            total: 0
+        }
     },
     reducers: {
         setUserData: (state, action) => {
@@ -37,6 +45,16 @@ const userSlice = createSlice({
         },
         setAddress: (state, action) => {
             state.address = action.payload
+        },
+        setRequestCounts: (state, action) => {
+            state.requestCounts = action.payload;
+        },
+        updateRequestCount: (state, action) => {
+            const { status, increment = 1 } = action.payload;
+            if (state.requestCounts[status] !== undefined) {
+                state.requestCounts[status] += increment;
+                state.requestCounts.total += increment;
+            }
         }
     },
 });
@@ -48,7 +66,9 @@ export const {
     setCurrentState,
     setLocation,
     setAddress,
-    setCurrentPincode
+    setCurrentPincode,
+    setRequestCounts,
+    updateRequestCount
 
 } = userSlice.actions;
 export default userSlice.reducer;
