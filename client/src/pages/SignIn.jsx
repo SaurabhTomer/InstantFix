@@ -30,13 +30,28 @@ function SignIn() {
         { email, password },
         { withCredentials: true }
       );
-      console.log(result.data);
+      // console.log(result.data.user.role);
 
       dispatch(setUserData(result.data));
-
+      if(result?.data?.user?.role === "ADMIN"){
+        navigate("/admin");
+      }
+      else if(result?.data?.user?.role === "USER"){
+        navigate("user");
+      }
+      else if(result?.data?.user?.approvalStatus === "pending" ) {
+        navigate("/")
+        toast.warn("wait for admin approval...")
+      }
+      else if(result?.data?.user?.approvalStatus === "approved" ) {
+        navigate("/electrician")
+      }
+      else{
+        navigate("/");
+      }
       toast.success("Login Successful...");
 
-      navigate("/user"); 
+      // navigate("/user"); 
 
     } catch (error) {
       toast.error(error?.response?.data?.message || "Login Failed");

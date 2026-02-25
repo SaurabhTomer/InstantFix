@@ -35,8 +35,18 @@ function SignUp() {
             }, { withCredentials: true })
             // console.log(result);
             dispatch(setUserData(result.data))
+                  if(result?.data?.user?.role === "ADMIN"){
+                    navigate("/admin");
+                  }
+                  else if(result?.data?.user?.role === "USER"){
+                    navigate("user");
+                  }
+                  else{
+                    toast.warn("Wait for admin approval...");
+                    navigate("/")
+                  }
             toast.success("Account created successfully...")
-            navigate("/")
+            // navigate("/")
         } catch (error) {
             // setErr(error?.response?.data?.message)
             toast.warn(error?.response?.data?.message)

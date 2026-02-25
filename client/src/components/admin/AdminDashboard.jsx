@@ -221,22 +221,35 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main Dashboard Content */}
-      <div className="relative z-10 flex">
+      <div className="relative z-10">
         <AdminDashboardLayout activeTab={activeTab} setActiveTab={setActiveTab}>
-          <div className="p-6 space-y-6">
+          <div className="p-8 space-y-8">
             {/* Page Header */}
             <div 
-              className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6"
+              className="bg-white/98 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100/50 p-8"
               style={{
                 animation: 'slide-in 0.4s ease-out'
               }}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p 
-                    className="text-gray-600"
+                  <h1 
+                    className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-2"
                     style={{
                       animation: 'fade-in 0.6s ease-out'
+                    }}
+                  >
+                    {activeTab === 'overview' && 'Platform Overview'}
+                    {activeTab === 'users' && 'User Management'}
+                    {activeTab === 'electricians' && 'Electricians Management'}
+                    {activeTab === 'requests' && 'Service Requests'}
+                    {activeTab === 'analytics' && 'Analytics & Reports'}
+                    {activeTab === 'settings' && 'Admin Settings'}
+                  </h1>
+                  <p 
+                    className="text-gray-600 text-lg"
+                    style={{
+                      animation: 'fade-in 0.7s ease-out'
                     }}
                   >
                     {activeTab === 'overview' && 'Manage and monitor the entire InstantFix platform'}
@@ -246,6 +259,13 @@ const AdminDashboard = () => {
                     {activeTab === 'analytics' && 'View detailed analytics and platform insights'}
                     {activeTab === 'settings' && 'Configure admin and platform settings'}
                   </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500">System Status</p>
+                    <p className="text-lg font-semibold text-green-600">All Systems Operational</p>
+                  </div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
               </div>
             </div>

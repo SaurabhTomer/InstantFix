@@ -1,8 +1,16 @@
 import React from 'react';
 import { FaBolt, FaHome, FaTools, FaClipboardList, FaUser, FaCog, FaSignOutAlt } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { serverUrl } from '../../App';
+import { setUserData } from '../../redux/userSlice';
+
 
 const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
+  const dispatch = useDispatch();
+  const {userData} = useSelector((state) => state.user)
+  
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: FaHome },
     { id: 'requests', label: 'My Requests', icon: FaClipboardList },
@@ -11,7 +19,28 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
     { id: 'settings', label: 'Settings', icon: FaCog },
   ];
 
-  const {userData} = useSelector((state) => state.user)
+  
+const handleLogout = async () => {
+  try {
+    const response = await axios.get(
+      `${serverUrl}/api/auth/logout`,
+      { withCredentials: true }
+    );
+
+    toast.success("Logged out successfully!");
+    
+    // Clear Redux state
+    dispatch(setUserData(null));
+    
+    // Redirect to login page
+    window.location.href = '/login';
+
+  } catch (error) {
+    // console.error("Logout error:", error);
+    toast.error(error.response?.data?.message || "Logout failed");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-blue-50">
@@ -79,7 +108,7 @@ const DashboardLayout = ({ children, activeTab, setActiveTab }) => {
               </div>
               <button className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                 <FaSignOutAlt className="w-4 h-4" />
-                <span>Logout</span>
+                <span onClick={handleLogout}>Logout</span>
               </button>
             </div>
           </div>
