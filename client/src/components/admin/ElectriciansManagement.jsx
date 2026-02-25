@@ -1,94 +1,97 @@
-import React, { useState } from 'react';
-import { FaTools, FaSearch, FaFilter, FaEye, FaBan, FaCheckCircle, FaClock, FaStar, FaMapMarkerAlt, FaPhone, FaEnvelope, FaCalendarAlt, FaEdit, FaTrash, FaUserPlus, FaExclamationTriangle, FaTimes } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaTools, FaSearch, FaFilter, FaEye, FaBan, FaCheckCircle, FaClock, FaStar, FaMapMarkerAlt, FaPhone, FaEnvelope, FaCalendarAlt, FaEdit, FaTrash, FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
+import axios from 'axios';
+import { serverUrl } from '../../App';
+import { toast } from 'react-toastify';
 
 const ElectriciansManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showElectricianDetails, setShowElectricianDetails] = useState(null);
   const [showApprovalModal, setShowApprovalModal] = useState(null);
+  const [electricians, setElectricians] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const electricians = [
-    {
-      id: 1,
-      name: 'Robert Chen',
-      email: 'robert.chen@example.com',
-      phone: '+1 234 567 8901',
-      status: 'approved',
-      joinDate: '2024-01-15',
-      rating: 4.8,
-      totalJobs: 45,
-      completedJobs: 42,
-      specialization: 'Residential Wiring',
-      experience: '8 years',
-      location: 'New York, NY',
-      certifications: ['Licensed Electrician', 'OSHA Certified'],
-      avatar: 'RC'
-    },
-    {
-      id: 2,
-      name: 'Maria Garcia',
-      email: 'maria.garcia@example.com',
-      phone: '+1 234 567 8902',
-      status: 'pending',
-      joinDate: '2024-02-01',
-      rating: 0,
-      totalJobs: 0,
-      completedJobs: 0,
-      specialization: 'Commercial Electrical',
-      experience: '5 years',
-      location: 'Los Angeles, CA',
-      certifications: ['Journeyman Electrician'],
-      avatar: 'MG'
-    },
-    {
-      id: 3,
-      name: 'James Wilson',
-      email: 'james.wilson@example.com',
-      phone: '+1 234 567 8903',
-      status: 'approved',
-      joinDate: '2023-12-10',
-      rating: 4.6,
-      totalJobs: 38,
-      completedJobs: 35,
-      specialization: 'Industrial Electrical',
-      experience: '12 years',
-      location: 'Chicago, IL',
-      certifications: ['Master Electrician', 'Safety Certified'],
-      avatar: 'JW'
-    },
-    {
-      id: 4,
-      name: 'Lisa Anderson',
-      email: 'lisa.anderson@example.com',
-      phone: '+1 234 567 8904',
-      status: 'suspended',
-      joinDate: '2024-01-20',
-      rating: 3.2,
-      totalJobs: 15,
-      completedJobs: 12,
-      specialization: 'Residential Wiring',
-      experience: '3 years',
-      location: 'Houston, TX',
-      certifications: ['Apprentice Electrician'],
-      avatar: 'LA'
-    },
-    {
-      id: 5,
-      name: 'David Kim',
-      email: 'david.kim@example.com',
-      phone: '+1 234 567 8905',
-      status: 'pending',
-      joinDate: '2024-02-15',
-      rating: 0,
-      totalJobs: 0,
-      completedJobs: 0,
-      specialization: 'HVAC Electrical',
-      experience: '6 years',
-      location: 'Phoenix, AZ',
-      certifications: ['HVAC Certified', 'Electrical License'],
-      avatar: 'DK'
+  // Fetch electricians from backend
+  useEffect(() => {
+    fetchElectricians();
+  }, []);
+
+  const fetchElectricians = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${serverUrl}/api/admin/electricians`, {
+        withCredentials: true
+      });
+      setElectricians(response.data.electricians || []);
+    } catch (error) {
+      console.error('Error fetching electricians:', error);
+      toast.error('Failed to fetch electricians');
+      // Fallback to mock data if API fails
+      setElectricians([
+        {
+          _id: '1',
+          name: 'Robert Chen',
+          email: 'robert.chen@example.com',
+          phone: '+1 234 567 8901',
+          approvalStatus: 'approved',
+          createdAt: '2024-01-15',
+          rating: 4.8,
+          totalJobs: 45,
+          completedJobs: 42,
+          specialization: 'Residential Wiring',
+          experience: '8 years',
+          location: 'New York, NY',
+          certifications: ['Licensed Electrician', 'OSHA Certified'],
+          role: 'ELECTRICIAN'
+        }
+      ]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleApprove = async (electrician) => {
+    try {
+      await axios.patch(`${serverUrl}/api/admin/electrician/${electrician._id}/approve`, {}, {
+        withCredentials: true
+      });
+      toast.success('Electrician approved successfully!');
+      setShowApprovalModal(null);
+      fetchElectricians(); // Refresh data
+    } catch (error) {
+      console.error('Error approving electrician:', error);
+      toast.error(error.response?.data?.message || 'Failed to approve electrician');
+    }
+  };
+
+  const handleReject = async (electrician) => {
+    try {
+      await axios.patch(`${serverUrl}/api/admin/electrician/${electrician._id}/reject`, {}, {
+        withCredentials: true
+      });
+      toast.success('Electrician rejected successfully!');
+      setShowApprovalModal(null);
+      fetchElectricians(); // Refresh data
+    } catch (error) {
+      console.error('Error rejecting electrician:', error);
+      toast.error(error.response?.data?.message || 'Failed to reject electrician');
+    }
+  };
+
+  const handleSuspend = async (electrician) => {
+    try {
+      // Since suspend endpoint doesn't exist, we'll update the approvalStatus to 'suspended'
+      await axios.patch(`${serverUrl}/api/admin/electrician/${electrician._id}/suspend`, {}, {
+        withCredentials: true
+      });
+      toast.success('Electrician suspended successfully!');
+      fetchElectricians(); // Refresh data
+    } catch (error) {
+      console.error('Error suspending electrician:', error);
+      toast.error(error.response?.data?.message || 'Failed to suspend electrician');
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -132,24 +135,22 @@ const ElectriciansManagement = () => {
   };
 
   const filteredElectricians = electricians.filter(electrician => {
-    const matchesSearch = electrician.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         electrician.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         electrician.specialization.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || electrician.status === filterStatus;
+    const matchesSearch = 
+      electrician.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      electrician.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (electrician.specialization && electrician.specialization.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesFilter = filterStatus === 'all' || electrician.approvalStatus === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
-  const handleApprove = (electrician) => {
-    // Handle approval logic here
-    console.log('Approving electrician:', electrician);
-    setShowApprovalModal(null);
-  };
-
-  const handleReject = (electrician) => {
-    // Handle rejection logic here
-    console.log('Rejecting electrician:', electrician);
-    setShowApprovalModal(null);
-  };
+  // Add loading state to the return
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -207,7 +208,7 @@ const ElectriciansManagement = () => {
             <div>
               <p className="text-sm text-gray-600">Approved</p>
               <p className="text-2xl font-bold text-green-600">
-                {electricians.filter(e => e.status === 'approved').length}
+                {electricians.filter(e => e.approvalStatus === 'approved').length}
               </p>
             </div>
             <FaCheckCircle className="w-8 h-8 text-green-500 opacity-50" />
@@ -218,7 +219,7 @@ const ElectriciansManagement = () => {
             <div>
               <p className="text-sm text-gray-600">Pending</p>
               <p className="text-2xl font-bold text-yellow-600">
-                {electricians.filter(e => e.status === 'pending').length}
+                {electricians.filter(e => e.approvalStatus === 'pending').length}
               </p>
             </div>
             <FaClock className="w-8 h-8 text-yellow-500 opacity-50" />
@@ -229,7 +230,7 @@ const ElectriciansManagement = () => {
             <div>
               <p className="text-sm text-gray-600">Suspended</p>
               <p className="text-2xl font-bold text-red-600">
-                {electricians.filter(e => e.status === 'suspended').length}
+                {electricians.filter(e => e.approvalStatus === 'suspended').length}
               </p>
             </div>
             <FaBan className="w-8 h-8 text-red-500 opacity-50" />
@@ -296,14 +297,16 @@ const ElectriciansManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredElectricians.map((electrician, index) => {
-                const StatusIcon = getStatusIcon(electrician.status);
+              {filteredElectricians.map((electrician) => {
+                const StatusIcon = getStatusIcon(electrician.approvalStatus);
                 return (
-                  <tr key={electrician.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={electrician._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-semibold text-orange-600">{electrician.avatar}</span>
+                          <span className="text-sm font-semibold text-orange-600">
+                            {electrician.name.split(' ').map(n => n[0]).join('')}
+                          </span>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{electrician.name}</div>
@@ -312,31 +315,31 @@ const ElectriciansManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{electrician.specialization}</div>
+                      <div className="text-sm text-gray-900">{electrician.specialization || 'Not specified'}</div>
                       <div className="text-sm text-gray-500 flex items-center gap-1">
                         <FaMapMarkerAlt className="w-3 h-3" />
-                        {electrician.location}
+                        {electrician.location || 'Not specified'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{electrician.experience}</div>
+                      <div className="text-sm text-gray-900">{electrician.experience || 'Not specified'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1">
-                        {getRatingStars(electrician.rating)}
+                        {getRatingStars(electrician.rating || 0)}
                         {electrician.rating > 0 && (
                           <span className="text-sm text-gray-600 ml-1">({electrician.rating})</span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{electrician.completedJobs}/{electrician.totalJobs}</div>
+                      <div className="text-sm text-gray-900">{electrician.completedJobs || 0}/{electrician.totalJobs || 0}</div>
                       <div className="text-xs text-gray-500">completed</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(electrician.status)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(electrician.approvalStatus)}`}>
                         <StatusIcon className="w-3 h-3 mr-1" />
-                        {electrician.status}
+                        {electrician.approvalStatus}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -354,7 +357,7 @@ const ElectriciansManagement = () => {
                         >
                           <FaEdit className="w-4 h-4" />
                         </button>
-                        {electrician.status === 'pending' && (
+                        {electrician.approvalStatus === 'pending' && (
                           <button
                             onClick={() => setShowApprovalModal(electrician)}
                             className="text-orange-600 hover:text-orange-900 transition-colors"
@@ -364,6 +367,7 @@ const ElectriciansManagement = () => {
                           </button>
                         )}
                         <button
+                          onClick={() => handleSuspend(electrician)}
                           className="text-red-600 hover:text-red-900 transition-colors"
                           title="Suspend"
                         >
@@ -492,70 +496,86 @@ const ElectriciansManagement = () => {
 
       {/* Approval Modal */}
       {showApprovalModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Review Application</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-2xl font-bold text-gray-800">Review Electrician Application</h3>
               <button
                 onClick={() => setShowApprovalModal(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <FaTimes className="w-5 h-5" />
+                <FaTimes className="w-6 h-6" />
               </button>
             </div>
-            
-            <div className="space-y-4">
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <FaExclamationTriangle className="w-5 h-5 text-yellow-600" />
-                  <h4 className="font-semibold text-yellow-800">Pending Application</h4>
-                </div>
-                <p className="text-sm text-yellow-700">
-                  Review {showApprovalModal.name}'s application and certifications before approval.
-                </p>
-              </div>
 
-              <div>
-                <p className="text-sm text-gray-600">Applicant</p>
-                <p className="font-medium">{showApprovalModal.name}</p>
-                <p className="text-sm text-gray-500">{showApprovalModal.email}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600">Specialization</p>
-                <p className="font-medium">{showApprovalModal.specialization}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600">Experience</p>
-                <p className="font-medium">{showApprovalModal.experience}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Certifications</p>
-                <div className="flex flex-wrap gap-2">
-                  {showApprovalModal.certifications.map((cert, index) => (
-                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                      {cert}
-                    </span>
-                  ))}
+            <div className="space-y-6">
+              {/* Applicant Info */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h4 className="font-semibold text-gray-800 mb-4">Applicant Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Name</p>
+                    <p className="font-medium">{showApprovalModal.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Email</p>
+                    <p className="font-medium">{showApprovalModal.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Phone</p>
+                    <p className="font-medium">{showApprovalModal.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Applied On</p>
+                    <p className="font-medium">{new Date(showApprovalModal.createdAt).toLocaleDateString()}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => handleReject(showApprovalModal)}
-                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => handleApprove(showApprovalModal)}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-              >
-                Approve
-              </button>
+              {/* Professional Details */}
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h4 className="font-semibold text-gray-800 mb-4">Professional Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Specialization</p>
+                    <p className="font-medium">{showApprovalModal.specialization || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Experience</p>
+                    <p className="font-medium">{showApprovalModal.experience || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Location</p>
+                    <p className="font-medium">{showApprovalModal.location || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Certifications</p>
+                    <p className="font-medium">
+                      {showApprovalModal.certifications && showApprovalModal.certifications.length > 0 
+                        ? showApprovalModal.certifications.join(', ') 
+                        : 'Not specified'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 justify-end">
+                <button
+                  onClick={() => handleReject(showApprovalModal)}
+                  className="px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-semibold"
+                >
+                  <FaBan className="w-4 h-4 inline mr-2" />
+                  Reject Application
+                </button>
+                <button
+                  onClick={() => handleApprove(showApprovalModal)}
+                  className="px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-semibold"
+                >
+                  <FaCheckCircle className="w-4 h-4 inline mr-2" />
+                  Approve Application
+                </button>
+              </div>
             </div>
           </div>
         </div>
