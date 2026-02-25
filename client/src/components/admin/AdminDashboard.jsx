@@ -5,6 +5,7 @@ import AdminDashboardLayout from './AdminDashboardLayout';
 import AdminOverview from './AdminOverview';
 import UsersManagement from './UsersManagement';
 import ElectriciansManagement from './ElectriciansManagement';
+import ElectricianApproval from './ElectricianApproval';
 import ServiceRequestsManagement from './ServiceRequestsManagement';
 import AdminAnalytics from './AdminAnalytics';
 import AdminSettings from './AdminSettings';
@@ -63,6 +64,8 @@ const AdminDashboard = () => {
         return <UsersManagement />;
       case 'electricians':
         return <ElectriciansManagement />;
+      case 'approvals':
+        return <ElectricianApproval />;
       case 'requests':
         return <ServiceRequestsManagement />;
       case 'analytics':

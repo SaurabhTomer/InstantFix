@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaBolt, FaHome, FaUsers, FaTools, FaClipboardList, FaChartLine, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaBolt, FaHome, FaUsers, FaTools, FaClipboardList, FaChartLine, FaCog, FaSignOutAlt, FaUserCheck } from 'react-icons/fa';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { serverUrl } from '../../App';
@@ -13,6 +13,7 @@ const AdminDashboardLayout = ({ children, activeTab, setActiveTab }) => {
     { id: 'overview', label: 'Admin Overview', icon: FaHome },
     { id: 'users', label: 'Users Management', icon: FaUsers },
     { id: 'electricians', label: 'Electricians', icon: FaTools },
+    { id: 'approvals', label: 'Approvals', icon: FaUserCheck },
     { id: 'requests', label: 'All Requests', icon: FaClipboardList },
     { id: 'analytics', label: 'Analytics', icon: FaChartLine },
     { id: 'settings', label: 'Admin Settings', icon: FaCog },
