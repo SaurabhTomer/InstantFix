@@ -11,19 +11,44 @@ const ElectriciansManagement = () => {
   const [showApprovalModal, setShowApprovalModal] = useState(null);
   const [electricians, setElectricians] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
   // Fetch electricians from backend
   useEffect(() => {
     fetchElectricians();
+    
+    // Set up real-time polling for updates
+    const interval = setInterval(() => {
+      fetchElectricians();
+    }, 30000); // Poll every 30 seconds for real-time updates
+
+    return () => clearInterval(interval);
   }, []);
+
+  // Also fetch when filter changes
+  useEffect(() => {
+    fetchElectricians();
+  }, [filterStatus]);
 
   const fetchElectricians = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${serverUrl}/api/admin/electricians`, {
+      // Add status filter to API call if not 'all'
+      const statusFilter = filterStatus === 'all' ? '' : `?status=${filterStatus}`;
+      const response = await axios.get(`${serverUrl}/api/admin/electricians${statusFilter}`, {
         withCredentials: true
       });
       setElectricians(response.data.electricians || []);
+      setLastUpdated(new Date()); // Update last refreshed time
+      
+      // Show real-time update notification
+      if (response.data.electricians && response.data.electricians.length > 0) {
+        const pendingCount = response.data.electricians.filter(e => e.approvalStatus === 'pending').length;
+        const approvedCount = response.data.electricians.filter(e => e.approvalStatus === 'approved').length;
+        const rejectedCount = response.data.electricians.filter(e => e.approvalStatus === 'rejected').length;
+        
+        console.log(`Real-time update: ${pendingCount} pending, ${approvedCount} approved, ${rejectedCount} rejected`);
+      }
     } catch (error) {
       console.error('Error fetching electricians:', error);
       toast.error('Failed to fetch electricians');
@@ -44,8 +69,41 @@ const ElectriciansManagement = () => {
           location: 'New York, NY',
           certifications: ['Licensed Electrician', 'OSHA Certified'],
           role: 'ELECTRICIAN'
+        },
+        {
+          _id: '2',
+          name: 'Maria Garcia',
+          email: 'maria.garcia@example.com',
+          phone: '+1 234 567 8902',
+          approvalStatus: 'pending',
+          createdAt: '2024-02-01',
+          rating: 0,
+          totalJobs: 0,
+          completedJobs: 0,
+          specialization: 'Commercial Electrical',
+          experience: '5 years',
+          location: 'Los Angeles, CA',
+          certifications: ['Journeyman Electrician'],
+          role: 'ELECTRICIAN'
+        },
+        {
+          _id: '3',
+          name: 'James Wilson',
+          email: 'james.wilson@example.com',
+          phone: '+1 234 567 8903',
+          approvalStatus: 'rejected',
+          createdAt: '2024-01-20',
+          rating: 0,
+          totalJobs: 0,
+          completedJobs: 0,
+          specialization: 'Industrial Electrical',
+          experience: '3 years',
+          location: 'Chicago, IL',
+          certifications: ['Apprentice Electrician'],
+          role: 'ELECTRICIAN'
         }
       ]);
+      setLastUpdated(new Date());
     } finally {
       setLoading(false);
     }
@@ -99,8 +157,10 @@ const ElectriciansManagement = () => {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'pending':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'suspended':
+      case 'rejected':
         return 'bg-red-100 text-red-800 border-red-200';
+      case 'suspended':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -112,6 +172,8 @@ const ElectriciansManagement = () => {
         return FaCheckCircle;
       case 'pending':
         return FaClock;
+      case 'rejected':
+        return FaBan;
       case 'suspended':
         return FaBan;
       default:
@@ -180,57 +242,88 @@ const ElectriciansManagement = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <FaTools className="w-6 h-6 text-orange-500" />
+          <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+            <FaTools className="w-8 h-8 text-orange-500" />
             Electricians Management
           </h2>
-          <p className="text-gray-600 mt-1">Manage electrician registrations and approvals</p>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-gray-600">Manage electrician registrations and approvals</p>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+              <button
+                onClick={fetchElectricians}
+                className="text-orange-500 hover:text-orange-600 transition-colors"
+                title="Refresh data"
+              >
+                ↻
+              </button>
+            </div>
+          </div>
         </div>
-        <button className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2">
-          <FaUserPlus />
-          Add Electrician
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-sm text-gray-500">Pending Approval</p>
+            <p className="text-2xl font-bold text-orange-600">
+              {electricians.filter(e => e.approvalStatus === 'pending').length}
+            </p>
+          </div>
+          <button className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2">
+            <FaUserPlus />
+            Add Electrician
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Electricians</p>
               <p className="text-2xl font-bold text-gray-800">{electricians.length}</p>
+              <p className="text-xs text-gray-500 mt-1">All time</p>
             </div>
             <FaTools className="w-8 h-8 text-orange-500 opacity-50" />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-green-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Approved</p>
               <p className="text-2xl font-bold text-green-600">
                 {electricians.filter(e => e.approvalStatus === 'approved').length}
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {electricians.length > 0 ? Math.round((electricians.filter(e => e.approvalStatus === 'approved').length / electricians.length) * 100) : 0}% of total
+              </p>
             </div>
             <FaCheckCircle className="w-8 h-8 text-green-500 opacity-50" />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-yellow-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending</p>
               <p className="text-2xl font-bold text-yellow-600">
                 {electricians.filter(e => e.approvalStatus === 'pending').length}
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {electricians.filter(e => e.approvalStatus === 'pending').length > 0 ? '⚠️ Action needed' : '✅ All processed'}
+              </p>
             </div>
             <FaClock className="w-8 h-8 text-yellow-500 opacity-50" />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-red-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Suspended</p>
+              <p className="text-sm text-gray-600">Rejected</p>
               <p className="text-2xl font-bold text-red-600">
-                {electricians.filter(e => e.approvalStatus === 'suspended').length}
+                {electricians.filter(e => e.approvalStatus === 'rejected').length}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {electricians.length > 0 ? Math.round((electricians.filter(e => e.approvalStatus === 'rejected').length / electricians.length) * 100) : 0}% of total
               </p>
             </div>
             <FaBan className="w-8 h-8 text-red-500 opacity-50" />
@@ -259,8 +352,9 @@ const ElectriciansManagement = () => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="all">All Status</option>
-              <option value="approved">Approved</option>
               <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
               <option value="suspended">Suspended</option>
             </select>
           </div>
