@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FaBolt, FaBell, FaMapMarkerAlt, FaUserCircle, FaSpinner } from 'react-icons/fa';
+import { FaBolt, FaBell, FaMapMarkerAlt, FaUserCircle, FaSpinner, FaTimes } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import AdminDashboardLayout from './AdminDashboardLayout';
 import AdminOverview from './AdminOverview';
 import UsersManagement from './UsersManagement';
+import ElectriciansManagement from './ElectriciansManagement';
+import ServiceRequestsManagement from './ServiceRequestsManagement';
+import AdminAnalytics from './AdminAnalytics';
+import AdminSettings from './AdminSettings';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -58,25 +62,13 @@ const AdminDashboard = () => {
       case 'users':
         return <UsersManagement />;
       case 'electricians':
-        return <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Electricians Management</h3>
-          <p className="text-gray-600">Electricians management component coming soon...</p>
-        </div>;
+        return <ElectriciansManagement />;
       case 'requests':
-        return <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">All Service Requests</h3>
-          <p className="text-gray-600">All requests management component coming soon...</p>
-        </div>;
+        return <ServiceRequestsManagement />;
       case 'analytics':
-        return <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Analytics & Reports</h3>
-          <p className="text-gray-600">Analytics component coming soon...</p>
-        </div>;
+        return <AdminAnalytics />;
       case 'settings':
-        return <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">Admin Settings</h3>
-          <p className="text-gray-600">Admin settings component coming soon...</p>
-        </div>;
+        return <AdminSettings />;
       default:
         return <AdminOverview />;
     }
