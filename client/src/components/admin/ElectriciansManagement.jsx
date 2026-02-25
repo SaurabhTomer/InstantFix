@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FaTools, FaSearch, FaFilter, FaEye, FaBan, FaCheckCircle, FaClock, FaStar, FaMapMarkerAlt, FaPhone, FaEnvelope, FaCalendarAlt, FaEdit, FaTrash, FaUserPlus, FaExclamationTriangle } from 'react-icons/fa';
+import { FaTools, FaUserPlus, FaSearch, FaFilter, FaEye, FaEdit, FaCheckCircle, FaBan, FaClock, FaTimes, FaMapMarkerAlt, FaStar, FaEnvelope, FaPhone, FaCalendarAlt, FaAward, FaSync } from 'react-icons/fa';
 import axios from 'axios';
 import { serverUrl } from '../../App';
 import { toast } from 'react-toastify';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectAdminStats, fetchAdminStats } from '../../redux/adminSlice';
 
 const ElectriciansManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +14,9 @@ const ElectriciansManagement = () => {
   const [electricians, setElectricians] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  const dispatch = useDispatch();
+  const adminStats = useSelector(selectAdminStats);
 
   // Fetch electricians from backend
   useEffect(() => {
@@ -281,7 +286,7 @@ const ElectriciansManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Electricians</p>
-              <p className="text-2xl font-bold text-gray-800">{electricians.length}</p>
+              <p className="text-2xl font-bold text-gray-800">{adminStats.totalElectricians || electricians.length}</p>
               <p className="text-xs text-gray-500 mt-1">All time</p>
             </div>
             <FaTools className="w-8 h-8 text-orange-500 opacity-50" />
@@ -292,10 +297,10 @@ const ElectriciansManagement = () => {
             <div>
               <p className="text-sm text-gray-600">Approved</p>
               <p className="text-2xl font-bold text-green-600">
-                {electricians.filter(e => e.approvalStatus === 'approved').length}
+                {adminStats.approvedElectricians || electricians.filter(e => e.approvalStatus === 'approved').length}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {electricians.length > 0 ? Math.round((electricians.filter(e => e.approvalStatus === 'approved').length / electricians.length) * 100) : 0}% of total
+                {adminStats.totalElectricians > 0 ? Math.round((adminStats.approvedElectricians / adminStats.totalElectricians) * 100) : 0}% of total
               </p>
             </div>
             <FaCheckCircle className="w-8 h-8 text-green-500 opacity-50" />
@@ -306,10 +311,10 @@ const ElectriciansManagement = () => {
             <div>
               <p className="text-sm text-gray-600">Pending</p>
               <p className="text-2xl font-bold text-yellow-600">
-                {electricians.filter(e => e.approvalStatus === 'pending').length}
+                {adminStats.pendingElectricians || electricians.filter(e => e.approvalStatus === 'pending').length}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {electricians.filter(e => e.approvalStatus === 'pending').length > 0 ? '⚠️ Action needed' : '✅ All processed'}
+                {adminStats.pendingElectricians > 0 ? '⚠️ Action needed' : '✅ All processed'}
               </p>
             </div>
             <FaClock className="w-8 h-8 text-yellow-500 opacity-50" />
@@ -320,10 +325,10 @@ const ElectriciansManagement = () => {
             <div>
               <p className="text-sm text-gray-600">Rejected</p>
               <p className="text-2xl font-bold text-red-600">
-                {electricians.filter(e => e.approvalStatus === 'rejected').length}
+                {adminStats.rejectedElectricians || electricians.filter(e => e.approvalStatus === 'rejected').length}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                {electricians.length > 0 ? Math.round((electricians.filter(e => e.approvalStatus === 'rejected').length / electricians.length) * 100) : 0}% of total
+                {adminStats.totalElectricians > 0 ? Math.round((adminStats.rejectedElectricians / adminStats.totalElectricians) * 100) : 0}% of total
               </p>
             </div>
             <FaBan className="w-8 h-8 text-red-500 opacity-50" />

@@ -1,5 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaClipboardList, FaSearch, FaFilter, FaEye, FaEdit, FaCheckCircle, FaTimesCircle, FaClock, FaExclamationTriangle, FaCalendarAlt, FaUser, FaMapMarkerAlt, FaTools, FaStar, FaDollarSign, FaDownload, FaSync } from 'react-icons/fa';
+import axios from 'axios';
+import { serverUrl } from '../../App';
+import { toast } from 'react-toastify';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectAdminStats, fetchAdminStats, incrementStat, decrementStat } from '../../redux/adminSlice';
 
 const ServiceRequestsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -7,99 +12,115 @@ const ServiceRequestsManagement = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [serviceRequests, setServiceRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  const dispatch = useDispatch();
+  const adminStats = useSelector(selectAdminStats);
 
-  const serviceRequests = [
-    {
-      id: 'SR001',
-      customerName: 'John Doe',
-      customerEmail: 'john.doe@example.com',
-      customerPhone: '+1 234 567 8900',
-      electricianName: 'Robert Chen',
-      electricianEmail: 'robert.chen@example.com',
-      issueType: 'Residential Wiring',
-      description: 'Need to install new electrical outlets in the living room and kitchen',
-      status: 'in-progress',
-      priority: 'medium',
-      amount: 250,
-      createdAt: '2024-02-15T10:30:00Z',
-      updatedAt: '2024-02-15T14:20:00Z',
-      address: '123 Main St, New York, NY',
-      rating: null,
-      paymentStatus: 'pending'
-    },
-    {
-      id: 'SR002',
-      customerName: 'Jane Smith',
-      customerEmail: 'jane.smith@example.com',
-      customerPhone: '+1 234 567 8901',
-      electricianName: 'Maria Garcia',
-      electricianEmail: 'maria.garcia@example.com',
-      issueType: 'Commercial Electrical',
-      description: 'Emergency repair needed for office lighting system',
-      status: 'completed',
-      priority: 'high',
-      amount: 500,
-      createdAt: '2024-02-14T09:15:00Z',
-      updatedAt: '2024-02-14T16:45:00Z',
-      address: '456 Oak Ave, Los Angeles, CA',
-      rating: 5,
-      paymentStatus: 'paid'
-    },
-    {
-      id: 'SR003',
-      customerName: 'Mike Johnson',
-      customerEmail: 'mike.j@example.com',
-      customerPhone: '+1 234 567 8902',
-      electricianName: null,
-      electricianEmail: null,
-      issueType: 'Industrial Electrical',
-      description: 'Factory machinery electrical maintenance required',
-      status: 'pending',
-      priority: 'high',
-      amount: 1200,
-      createdAt: '2024-02-15T08:00:00Z',
-      updatedAt: '2024-02-15T08:00:00Z',
-      address: '789 Pine Rd, Chicago, IL',
-      rating: null,
-      paymentStatus: 'pending'
-    },
-    {
-      id: 'SR004',
-      customerName: 'Sarah Wilson',
-      customerEmail: 'sarah.w@example.com',
-      customerPhone: '+1 234 567 8903',
-      electricianName: 'James Wilson',
-      electricianEmail: 'james.wilson@example.com',
-      issueType: 'HVAC Electrical',
-      description: 'AC unit not working, need electrical diagnosis',
-      status: 'accepted',
-      priority: 'low',
-      amount: 150,
-      createdAt: '2024-02-13T11:30:00Z',
-      updatedAt: '2024-02-14T09:00:00Z',
-      address: '321 Elm St, Houston, TX',
-      rating: null,
-      paymentStatus: 'pending'
-    },
-    {
-      id: 'SR005',
-      customerName: 'David Kim',
-      customerEmail: 'david.kim@example.com',
-      customerPhone: '+1 234 567 8904',
-      electricianName: 'Lisa Anderson',
-      electricianEmail: 'lisa.anderson@example.com',
-      issueType: 'Emergency Services',
-      description: 'Power outage in residential building',
-      status: 'completed',
-      priority: 'urgent',
-      amount: 800,
-      createdAt: '2024-02-12T22:15:00Z',
-      updatedAt: '2024-02-13T02:30:00Z',
-      address: '654 Maple Dr, Phoenix, AZ',
-      rating: 4,
-      paymentStatus: 'paid'
+  // Fetch service requests from backend
+  useEffect(() => {
+    fetchServiceRequests();
+    
+    // Set up real-time polling for updates
+    const interval = setInterval(() => {
+      fetchServiceRequests();
+    }, 30000); // Poll every 30 seconds for real-time updates
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Also fetch when filters change
+  useEffect(() => {
+    fetchServiceRequests();
+  }, [filterStatus, filterPriority]);
+
+  const fetchServiceRequests = async () => {
+    try {
+      setLoading(true);
+      // Build query parameters for filtering
+      const params = new URLSearchParams();
+      if (filterStatus !== 'all') params.append('status', filterStatus);
+      if (filterPriority !== 'all') params.append('priority', filterPriority);
+      
+      // Use the real admin API endpoint
+      const response = await axios.get(`${serverUrl}/api/admin/service-requests${params.toString() ? '?' + params.toString() : ''}`, {
+        withCredentials: true
+      });
+      
+      const requests = response.data.data?.requests || response.data.requests || [];
+      setServiceRequests(requests);
+      setLastUpdated(new Date());
+      
+      // Show real-time update notification
+      if (requests.length > 0) {
+        const pendingCount = requests.filter(r => r.status === 'pending').length;
+        const inProgressCount = requests.filter(r => r.status === 'in-progress').length;
+        const completedCount = requests.filter(r => r.status === 'completed').length;
+        
+        console.log(`Real-time update: ${pendingCount} pending, ${inProgressCount} in-progress, ${completedCount} completed`);
+      }
+    } catch (error) {
+      console.error('Error fetching service requests:', error);
+      toast.error('Failed to fetch service requests');
+      
+      // Only use fallback data if API completely fails
+      if (!error.response || error.response.status >= 500) {
+        setServiceRequests([]);
+      }
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleStatusUpdate = async (requestId, newStatus) => {
+    try {
+      await axios.patch(`${serverUrl}/api/admin/service-requests/${requestId}/status`, 
+        { status: newStatus }, 
+        { withCredentials: true }
+      );
+      toast.success(`Request status updated to ${newStatus}`);
+      
+      // Update Redux stats
+      if (newStatus === 'completed') {
+        dispatch(decrementStat({ stat: 'inProgressRequests' }));
+        dispatch(incrementStat({ stat: 'completedRequests' }));
+      } else if (newStatus === 'in-progress') {
+        dispatch(decrementStat({ stat: 'pendingRequests' }));
+        dispatch(incrementStat({ stat: 'inProgressRequests' }));
+      }
+      
+      fetchServiceRequests(); // Refresh data
+      dispatch(fetchAdminStats());
+    } catch (error) {
+      console.error('Error updating request status:', error);
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const handleAssignElectrician = async (requestId, electricianId) => {
+    try {
+      await axios.patch(`${serverUrl}/api/admin/service-requests/${requestId}/assign`, 
+        { electricianId }, 
+        { withCredentials: true }
+      );
+      toast.success('Electrician assigned successfully');
+      fetchServiceRequests(); // Refresh data
+      dispatch(fetchAdminStats());
+    } catch (error) {
+      console.error('Error assigning electrician:', error);
+      toast.error(error.response?.data?.message || 'Failed to assign electrician');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -176,10 +197,10 @@ const ServiceRequestsManagement = () => {
 
   const filteredRequests = serviceRequests.filter(request => {
     const matchesSearch = 
-      request.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.issueType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (request.electricianName && request.electricianName.toLowerCase().includes(searchTerm.toLowerCase()));
+      (request.customer?.name && request.customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (request.customer?.email && request.customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (request.issueType && request.issueType.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (request._id && request._id.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || request.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || request.priority === filterPriority;
     return matchesSearch && matchesStatus && matchesPriority;
@@ -188,11 +209,6 @@ const ServiceRequestsManagement = () => {
   const handleViewDetails = (request) => {
     setSelectedRequest(request);
     setShowDetailsModal(true);
-  };
-
-  const handleStatusUpdate = (requestId, newStatus) => {
-    console.log(`Updating request ${requestId} to ${newStatus}`);
-    // Handle status update logic here
   };
 
   return (
@@ -227,14 +243,30 @@ const ServiceRequestsManagement = () => {
             <FaClipboardList className="w-6 h-6 text-purple-500" />
             Service Requests Management
           </h2>
-          <p className="text-gray-600 mt-1">Monitor and manage all service requests across the platform</p>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-gray-600">Monitor and manage all service requests across the platform</p>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Last updated: {lastUpdated.toLocaleTimeString()}</span>
+              <button
+                onClick={fetchServiceRequests}
+                className="text-purple-500 hover:text-purple-600 transition-colors"
+                title="Refresh data"
+              >
+                ↻
+              </button>
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2">
             <FaDownload />
             Export
           </button>
-          <button className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2">
+          <button 
+            onClick={fetchServiceRequests}
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+          >
             <FaSync />
             Refresh
           </button>
@@ -243,57 +275,70 @@ const ServiceRequestsManagement = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Requests</p>
-              <p className="text-2xl font-bold text-gray-800">{serviceRequests.length}</p>
+              <p className="text-2xl font-bold text-gray-800">{adminStats.totalServiceRequests || serviceRequests.length}</p>
+              <p className="text-xs text-gray-500 mt-1">All time</p>
             </div>
             <FaClipboardList className="w-8 h-8 text-purple-500 opacity-50" />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-blue-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">In Progress</p>
+              <p className="text-2xl font-bold text-blue-600">
+                {adminStats.inProgressRequests || serviceRequests.filter(r => r.status === 'in-progress').length}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {adminStats.totalServiceRequests > 0 ? Math.round((adminStats.inProgressRequests / adminStats.totalServiceRequests) * 100) : 0}% active
+              </p>
+            </div>
+            <FaClock className="w-8 h-8 text-blue-500 opacity-50" />
+          </div>
+        </div>
+        <div className="bg-white rounded-lg p-4 border border-yellow-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Pending</p>
               <p className="text-2xl font-bold text-yellow-600">
-                {serviceRequests.filter(r => r.status === 'pending').length}
+                {adminStats.pendingRequests || serviceRequests.filter(r => r.status === 'pending').length}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {adminStats.pendingRequests > 0 ? '⚠️ Action needed' : '✅ All processed'}
               </p>
             </div>
             <FaExclamationTriangle className="w-8 h-8 text-yellow-500 opacity-50" />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">In Progress</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {serviceRequests.filter(r => r.status === 'in-progress').length}
-              </p>
-            </div>
-            <FaTools className="w-8 h-8 text-blue-500 opacity-50" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-green-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Completed</p>
               <p className="text-2xl font-bold text-green-600">
-                {serviceRequests.filter(r => r.status === 'completed').length}
+                {adminStats.completedRequests || serviceRequests.filter(r => r.status === 'completed').length}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {adminStats.totalServiceRequests > 0 ? Math.round((adminStats.completedRequests / adminStats.totalServiceRequests) * 100) : 0}% success rate
               </p>
             </div>
             <FaCheckCircle className="w-8 h-8 text-green-500 opacity-50" />
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="bg-white rounded-lg p-4 border border-red-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Revenue</p>
-              <p className="text-2xl font-bold text-purple-600">
-                ${serviceRequests.reduce((sum, r) => sum + r.amount, 0).toLocaleString()}
+              <p className="text-sm text-gray-600">High Priority</p>
+              <p className="text-2xl font-bold text-red-600">
+                {serviceRequests.filter(r => r.priority === 'high').length}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {serviceRequests.filter(r => r.priority === 'high' && r.status !== 'completed').length > 0 ? '🔥 Urgent' : '✅ No urgent'}
               </p>
             </div>
-            <FaDollarSign className="w-8 h-8 text-purple-500 opacity-50" />
+            <FaExclamationTriangle className="w-8 h-8 text-red-500 opacity-50" />
           </div>
         </div>
       </div>
@@ -379,44 +424,35 @@ const ServiceRequestsManagement = () => {
               {filteredRequests.map((request) => {
                 const StatusIcon = getStatusIcon(request.status);
                 return (
-                  <tr key={request.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={request._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{request.id}</div>
+                      <div className="text-sm font-medium text-gray-900">{request._id}</div>
                       <div className="text-xs text-gray-500">{formatDate(request.createdAt)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{request.customerName}</div>
-                      <div className="text-xs text-gray-500">{request.customerEmail}</div>
+                      <div className="text-sm text-gray-900">{request.customer?.name || 'Unknown'}</div>
+                      <div className="text-xs text-gray-500">{request.customer?.email || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{request.issueType}</div>
                       <div className="text-xs text-gray-500 flex items-center gap-1">
                         <FaMapMarkerAlt className="w-3 h-3" />
-                        {request.address.split(',')[1]}
+                        {request.address?.city || 'N/A'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {request.electricianName ? (
+                      {request.electrician ? (
                         <div>
-                          <div className="text-sm text-gray-900">{request.electricianName}</div>
-                          {request.rating && (
-                            <div className="flex items-center gap-1">
-                              <FaStar className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-xs text-gray-600">{request.rating}</span>
-                            </div>
-                          )}
+                          <div className="text-sm text-gray-900">{request.electrician.name}</div>
+                          <div className="text-xs text-gray-500">{request.electrician.email}</div>
                         </div>
                       ) : (
                         <span className="text-sm text-gray-500">Not assigned</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(request.priority)}`}>
-                        {request.priority}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">${request.amount}</div>
+                      <div className="text-sm text-gray-900">${request.amount || 0}</div>
+                      <div className="text-xs text-gray-500">{request.paymentStatus || 'pending'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
@@ -424,38 +460,40 @@ const ServiceRequestsManagement = () => {
                         {request.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPaymentStatusColor(request.paymentStatus)}`}>
-                        {request.paymentStatus}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => handleViewDetails(request)}
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowDetailsModal(true);
+                          }}
                           className="text-blue-600 hover:text-blue-900 transition-colors"
                           title="View Details"
                         >
                           <FaEye className="w-4 h-4" />
                         </button>
                         <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowDetailsModal(true);
+                          }}
                           className="text-green-600 hover:text-green-900 transition-colors"
-                          title="Edit"
+                          title="Edit Status"
                         >
                           <FaEdit className="w-4 h-4" />
                         </button>
                         {request.status === 'pending' && (
                           <button
-                            onClick={() => handleStatusUpdate(request.id, 'accepted')}
+                            onClick={() => handleStatusUpdate(request._id, 'in-progress')}
                             className="text-yellow-600 hover:text-yellow-900 transition-colors"
-                            title="Accept"
+                            title="Start Work"
                           >
-                            <FaCheckCircle className="w-4 h-4" />
+                            <FaClock className="w-4 h-4" />
                           </button>
                         )}
-                        {(request.status === 'accepted' || request.status === 'in-progress') && (
+                        {request.status === 'in-progress' && (
                           <button
-                            onClick={() => handleStatusUpdate(request.id, 'completed')}
+                            onClick={() => handleStatusUpdate(request._id, 'completed')}
                             className="text-green-600 hover:text-green-900 transition-colors"
                             title="Mark Complete"
                           >
@@ -497,19 +535,24 @@ const ServiceRequestsManagement = () => {
                   <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                     <div>
                       <p className="text-sm text-gray-600">Name</p>
-                      <p className="font-medium">{selectedRequest.customerName}</p>
+                      <p className="font-medium">{selectedRequest.customer?.name || 'Unknown'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Email</p>
-                      <p className="font-medium">{selectedRequest.customerEmail}</p>
+                      <p className="font-medium">{selectedRequest.customer?.email || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Phone</p>
-                      <p className="font-medium">{selectedRequest.customerPhone}</p>
+                      <p className="font-medium">{selectedRequest.customer?.phone || 'N/A'}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600">Address</p>
-                      <p className="font-medium">{selectedRequest.address}</p>
+                      <p className="font-medium">
+                        {selectedRequest.address ? 
+                          `${selectedRequest.address.street || ''}, ${selectedRequest.address.city || ''}, ${selectedRequest.address.state || ''} ${selectedRequest.address.pincode || ''}`.trim() 
+                          : 'N/A'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -3,11 +3,27 @@ import { FaBolt, FaHome, FaUsers, FaTools, FaClipboardList, FaChartLine, FaCog, 
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { serverUrl } from '../../App';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setUserData } from '../../redux/userSlice';
+import { fetchAdminProfile, fetchAdminStats, selectAdminProfile, selectAdminStats } from '../../redux/adminSlice';
 
 const AdminDashboardLayout = ({ children, activeTab, setActiveTab }) => {
   const dispatch = useDispatch();
+  const adminProfile = useSelector(selectAdminProfile);
+  const adminStats = useSelector(selectAdminStats);
+  
+  // Fetch admin data on component mount
+  React.useEffect(() => {
+    dispatch(fetchAdminProfile());
+    dispatch(fetchAdminStats());
+    
+    // Set up polling for stats every 30 seconds
+    const interval = setInterval(() => {
+      dispatch(fetchAdminStats());
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [dispatch]);
   
   const menuItems = [
     { id: 'overview', label: 'Admin Overview', icon: FaHome },
@@ -105,18 +121,32 @@ const AdminDashboardLayout = ({ children, activeTab, setActiveTab }) => {
           {/* Enhanced Admin Section */}
           <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-100/50">
             <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl p-6 shadow-inner">
+              {/* Admin Profile */}
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg">
-                  <FaCog className="w-6 h-6 text-white" />
+                  {adminProfile.avatar ? (
+                    <img src={adminProfile.avatar} alt="Admin" className="w-12 h-12 rounded-full" />
+                  ) : (
+                    <FaCog className="w-6 h-6 text-white" />
+                  )}
                 </div>
-                <div>
-                  <p className="font-bold text-gray-800">Admin User</p>
-                  <p className="text-sm text-gray-600">admin@instantfix.com</p>
+                <div className="flex-1">
+                  <p className="font-bold text-gray-800">
+                    {adminProfile.name || 'Admin User'}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {adminProfile.email || 'admin@instantfix.com'}
+                  </p>
                 </div>
               </div>
-              <button className="w-full flex items-center justify-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 rounded-xl transition-all duration-300 hover:shadow-md">
+
+              {/* Logout Button */}
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 rounded-xl transition-all duration-300 hover:shadow-md"
+              >
                 <FaSignOutAlt className="w-4 h-4" />
-                <span onClick={handleLogout}>Logout</span>
+                <span>Logout</span>
               </button>
             </div>
           </div>

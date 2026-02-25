@@ -4,6 +4,332 @@ import { getIO } from '../socket/socket.js';
 import { sendElectricianApprovedMail, sendElectricianRejectedMail } from '../utils/sendEmail.js';
 import NotificationService from '../utils/notificationService.js';
 
+// Get admin profile
+export const getAdminProfile = async (req, res) => {
+  try {
+    const admin = await User.findById(req.user.id).select('-password');
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        msg: "Admin not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        name: admin.name,
+        email: admin.email,
+        phone: admin.phone,
+        role: admin.role,
+        avatar: admin.avatar,
+        joinDate: admin.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin profile:', error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
+// Get admin statistics
+export const getAdminStats = async (req, res) => {
+  try {
+    // Get all counts in parallel for better performance
+    const [
+      totalUsers,
+      totalElectricians,
+      pendingElectricians,
+      approvedElectricians,
+      rejectedElectricians,
+      suspendedElectricians,
+      totalServiceRequests,
+      pendingRequests,
+      inProgressRequests,
+      completedRequests,
+      activeElectricians
+    ] = await Promise.all([
+      User.countDocuments({ role: 'USER' }),
+      User.countDocuments({ role: 'ELECTRICIAN' }),
+      User.countDocuments({ role: 'ELECTRICIAN', approvalStatus: 'pending' }),
+      User.countDocuments({ role: 'ELECTRICIAN', approvalStatus: 'approved' }),
+      User.countDocuments({ role: 'ELECTRICIAN', approvalStatus: 'rejected' }),
+      User.countDocuments({ role: 'ELECTRICIAN', approvalStatus: 'suspended' }),
+      ServiceRequest.countDocuments(),
+      ServiceRequest.countDocuments({ status: 'pending' }),
+      ServiceRequest.countDocuments({ status: 'in-progress' }),
+      ServiceRequest.countDocuments({ status: 'completed' }),
+      User.countDocuments({ role: 'ELECTRICIAN', approvalStatus: 'approved', lastActive: { $exists: true, $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }) // Active in last 30 days
+    ]);
+
+    // Calculate revenue (mock data for now)
+    const totalRevenue = completedRequests * 250; // Average $250 per completed request
+    const monthlyRevenue = totalRevenue / 12; // Simple monthly calculation
+
+    // Calculate average rating (mock data for now)
+    const averageRating = 4.5;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        totalElectricians,
+        totalServiceRequests,
+        pendingRequests,
+        inProgressRequests,
+        completedRequests,
+        pendingElectricians,
+        approvedElectricians,
+        rejectedElectricians,
+        suspendedElectricians,
+        totalRevenue,
+        monthlyRevenue,
+        averageRating,
+        activeElectricians
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin stats:', error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
+// Get all service requests for admin
+export const getAllServiceRequests = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build filter
+    const filter = {};
+    
+    if (req.query.status && req.query.status !== 'all') {
+      filter.status = req.query.status;
+    }
+    
+    if (req.query.priority && req.query.priority !== 'all') {
+      filter.priority = req.query.priority;
+    }
+
+    const [requests, total] = await Promise.all([
+      ServiceRequest.find(filter)
+        .populate('customer', 'name email phone')
+        .populate('electrician', 'name email phone')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      
+      ServiceRequest.countDocuments(filter)
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        requests,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching service requests:', error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
+// Update service request status
+export const updateServiceRequestStatus = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { status } = req.body;
+
+    const request = await ServiceRequest.findById(requestId)
+      .populate('customer', 'name email')
+      .populate('electrician', 'name email');
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        msg: "Service request not found",
+      });
+    }
+
+    request.status = status;
+    await request.save();
+
+    return res.status(200).json({
+      success: true,
+      msg: `Service request status updated to ${status}`,
+      data: request
+    });
+  } catch (error) {
+    console.error('Error updating service request status:', error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
+// Assign electrician to service request
+export const assignElectricianToRequest = async (req, res) => {
+  try {
+    const { requestId } = req.params;
+    const { electricianId } = req.body;
+
+    const request = await ServiceRequest.findById(requestId)
+      .populate('customer', 'name email')
+      .populate('electrician', 'name email');
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        msg: "Service request not found",
+      });
+    }
+
+    const electrician = await User.findById(electricianId);
+    if (!electrician || electrician.role !== 'ELECTRICIAN') {
+      return res.status(404).json({
+        success: false,
+        msg: "Electrician not found",
+      });
+    }
+
+    request.electrician = electricianId;
+    await request.save();
+
+    return res.status(200).json({
+      success: true,
+      msg: "Electrician assigned successfully",
+      data: request
+    });
+  } catch (error) {
+    console.error('Error assigning electrician:', error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
+// Get all users for admin
+export const getAllUsers = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build filter
+    const filter = { role: 'USER' };
+    
+    if (req.query.status && req.query.status !== 'all') {
+      filter.status = req.query.status;
+    }
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('-password')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      
+      User.countDocuments(filter)
+    ]);
+
+    // Get service request counts for each user
+    const usersWithStats = await Promise.all(
+      users.map(async (user) => {
+        const [totalRequests, completedRequests] = await Promise.all([
+          ServiceRequest.countDocuments({ customer: user._id }),
+          ServiceRequest.countDocuments({ 
+            customer: user._id, 
+            status: 'completed' 
+          })
+        ]);
+
+        return {
+          ...user.toObject(),
+          totalRequests,
+          completedRequests,
+          activeRequests: totalRequests - completedRequests
+        };
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        users: usersWithStats,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
+// Update user status
+export const updateUserStatus = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { status } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        msg: "User not found",
+      });
+    }
+
+    if (user.role !== 'USER') {
+      return res.status(400).json({
+        success: false,
+        msg: "Cannot modify non-user accounts",
+      });
+    }
+
+    user.status = status;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      msg: `User status updated to ${status}`,
+      data: user
+    });
+  } catch (error) {
+    console.error('Error updating user status:', error);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
 //approve electrician 
 export const approveElectrician = async (req, res) => {
     try {

@@ -1,68 +1,104 @@
-import React, { useState } from 'react';
-import { FaUsers, FaSearch, FaFilter, FaEye, FaBan, FaCheckCircle, FaClock, FaCog, FaEdit } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaUsers, FaSearch, FaFilter, FaEye, FaBan, FaCheckCircle, FaClock, FaCog, FaEdit, FaSync } from 'react-icons/fa';
+import axios from 'axios';
+import { serverUrl } from '../../App';
+import { toast } from 'react-toastify';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectAdminStats, fetchAdminStats, incrementStat, decrementStat } from '../../redux/adminSlice';
 
 const UsersManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showUserDetails, setShowUserDetails] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  const dispatch = useDispatch();
+  const adminStats = useSelector(selectAdminStats);
 
-  const users = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 234 567 8900',
-      status: 'active',
-      joinDate: '2024-01-15',
-      totalRequests: 12,
-      completedRequests: 8,
-      address: '123 Main St, New York, NY'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane.smith@example.com',
-      phone: '+1 234 567 8901',
-      status: 'active',
-      joinDate: '2024-01-20',
-      totalRequests: 8,
-      completedRequests: 6,
-      address: '456 Oak Ave, Los Angeles, CA'
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      email: 'mike.j@example.com',
-      phone: '+1 234 567 8902',
-      status: 'suspended',
-      joinDate: '2024-02-01',
-      totalRequests: 5,
-      completedRequests: 3,
-      address: '789 Pine Rd, Chicago, IL'
-    },
-    {
-      id: 4,
-      name: 'Sarah Wilson',
-      email: 'sarah.w@example.com',
-      phone: '+1 234 567 8903',
-      status: 'active',
-      joinDate: '2024-02-10',
-      totalRequests: 3,
-      completedRequests: 1,
-      address: '321 Elm St, Houston, TX'
-    },
-    {
-      id: 5,
-      name: 'Tom Brown',
-      email: 'tom.brown@example.com',
-      phone: '+1 234 567 8904',
-      status: 'pending',
-      joinDate: '2024-02-20',
-      totalRequests: 0,
-      completedRequests: 0,
-      address: '654 Maple Dr, Phoenix, AZ'
+  // Fetch users from backend
+  useEffect(() => {
+    fetchUsers();
+    
+    // Set up real-time polling for updates
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 30000); // Poll every 30 seconds for real-time updates
+
+    return () => clearInterval(interval);
+  }, [filterStatus]);
+
+  // Also fetch when filters change
+  useEffect(() => {
+    fetchUsers();
+  }, [filterStatus]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      // Build query parameters for filtering
+      const params = new URLSearchParams();
+      if (filterStatus !== 'all') params.append('status', filterStatus);
+      
+      const response = await axios.get(`${serverUrl}/api/admin/users${params.toString() ? '?' + params.toString() : ''}`, {
+        withCredentials: true
+      });
+      
+      const fetchedUsers = response.data.data?.users || response.data.users || [];
+      setUsers(fetchedUsers);
+      setLastUpdated(new Date());
+      
+      // Show real-time update notification
+      if (fetchedUsers.length > 0) {
+        const activeCount = fetchedUsers.filter(u => u.status === 'active').length;
+        const suspendedCount = fetchedUsers.filter(u => u.status === 'suspended').length;
+        
+        console.log(`Real-time update: ${activeCount} active, ${suspendedCount} suspended users`);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleStatusUpdate = async (userId, newStatus) => {
+    try {
+      await axios.patch(`${serverUrl}/api/admin/users/${userId}/status`, 
+        { status: newStatus }, 
+        { withCredentials: true }
+      );
+      toast.success(`User status updated to ${newStatus}`);
+      
+      // Update Redux stats
+      if (newStatus === 'suspended') {
+        dispatch(decrementStat({ stat: 'totalUsers' }));
+      } else if (newStatus === 'active') {
+        dispatch(incrementStat({ stat: 'totalUsers' }));
+      }
+      
+      fetchUsers(); // Refresh data
+      dispatch(fetchAdminStats());
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
+  const handleViewDetails = (user) => {
+    setShowUserDetails(user);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -91,23 +127,32 @@ const UsersManagement = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = 
+      (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesFilter = filterStatus === 'all' || user.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
   const handleUserAction = (userId, action) => {
-    console.log(`User ${userId}: ${action}`);
-    // Here you would implement the actual action
+    handleStatusUpdate(userId, action);
   };
 
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">Users Management</h2>
-        <p className="text-gray-600">Manage and monitor all platform users</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Users Management</h2>
+          <p className="text-gray-600">Manage and monitor all platform users</p>
+        </div>
+        <button
+          onClick={fetchUsers}
+          className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+        >
+          <FaSync className="w-4 h-4" />
+          Refresh
+        </button>
       </div>
 
       {/* Search and Filter */}
@@ -208,64 +253,74 @@ const UsersManagement = () => {
               {filteredUsers.map((user) => {
                 const StatusIcon = getStatusIcon(user.status);
                 return (
-                  <tr key={user.id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={user._id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-4 px-4">
                       <div>
                         <p className="font-semibold text-gray-800">{user.name}</p>
-                        <p className="text-sm text-gray-600">ID: #{user.id.toString().padStart(4, '0')}</p>
+                        <p className="text-sm text-gray-600">ID: #{user._id.toString().slice(-6)}</p>
                       </div>
                     </td>
                     <td className="py-4 px-4">
                       <div>
                         <p className="text-sm text-gray-800">{user.email}</p>
-                        <p className="text-sm text-gray-600">{user.phone}</p>
+                        <p className="text-sm text-gray-600">{user.phone || 'N/A'}</p>
                       </div>
                     </td>
                     <td className="py-4 px-4">
                       <span className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(user.status)}`}>
                         <StatusIcon className="w-3 h-3" />
-                        {user.status}
+                        {user.status || 'active'}
                       </span>
                     </td>
-                    <td className="py-4 px-4 text-gray-600">{user.joinDate}</td>
                     <td className="py-4 px-4">
-                      <div className="text-sm">
-                        <p className="text-gray-800">{user.totalRequests} total</p>
-                        <p className="text-green-600">{user.completedRequests} completed</p>
+                      <div>
+                        <p className="text-sm text-gray-800">{user.totalRequests || 0}</p>
+                        <p className="text-xs text-gray-600">Total requests</p>
                       </div>
                     </td>
                     <td className="py-4 px-4">
+                      <div>
+                        <p className="text-sm text-gray-800">{user.completedRequests || 0}</p>
+                        <p className="text-xs text-gray-600">Completed</p>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <p className="text-sm text-gray-800">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </p>
+                    </td>
+                    <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => setShowUserDetails(user)}
+                        <button
+                          onClick={() => handleViewDetails(user)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="View Details"
                         >
                           <FaEye className="w-4 h-4" />
                         </button>
-                        <button 
-                          className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                          title="Edit User"
-                        >
-                          <FaEdit className="w-4 h-4" />
-                        </button>
                         {user.status === 'active' ? (
-                          <button 
-                            onClick={() => handleUserAction(user.id, 'suspend')}
+                          <button
+                            onClick={() => handleUserAction(user._id, 'suspended')}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                             title="Suspend User"
                           >
                             <FaBan className="w-4 h-4" />
                           </button>
                         ) : (
-                          <button 
-                            onClick={() => handleUserAction(user.id, 'activate')}
+                          <button
+                            onClick={() => handleUserAction(user._id, 'active')}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                             title="Activate User"
                           >
                             <FaCheckCircle className="w-4 h-4" />
                           </button>
                         )}
+                        <button
+                          className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                          title="Edit User"
+                        >
+                          <FaEdit className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -300,15 +355,25 @@ const UsersManagement = () => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-semibold">{showUserDetails.phone}</p>
+                <p className="font-semibold">{showUserDetails.phone || 'N/A'}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Address</p>
-                <p className="font-semibold">{showUserDetails.address}</p>
+                <p className="text-sm text-gray-600">Status</p>
+                <p className="font-semibold">{showUserDetails.status || 'active'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Total Requests</p>
+                <p className="font-semibold">{showUserDetails.totalRequests || 0}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Completed Requests</p>
+                <p className="font-semibold">{showUserDetails.completedRequests || 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Join Date</p>
-                <p className="font-semibold">{showUserDetails.joinDate}</p>
+                <p className="font-semibold">
+                  {new Date(showUserDetails.createdAt).toLocaleDateString()}
+                </p>
               </div>
             </div>
           </div>
