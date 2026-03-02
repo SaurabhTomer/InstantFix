@@ -110,7 +110,7 @@ export const deleteAddress = async (req, res) => {
   }
 };
 
-// update address
+// update address of user
 export const updateAddress = async (req, res) => {
   try {
     const userId = req.user.id;
