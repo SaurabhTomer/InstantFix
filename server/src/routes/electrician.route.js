@@ -1,6 +1,6 @@
 import express from 'express'
 import { authMiddleware, authorizeRoles } from '../middlewares/auth.middleware.js';
-import { getAssignedRequests, getCompletedRequests, getNearbyRequests, getRequestDetails, rejectRequest, setAvailability, setElectricianLocation } from '../controllers/service.electrician.controller.js';
+import { getAssignedRequests, getCompletedRequests, getNearbyRequests, getRequestDetails, rejectRequest, setAvailability, setElectricianLocation, acceptRequest, startJob, completeJob } from '../controllers/service.electrician.controller.js';
 import { getElectricianRatings } from '../controllers/rating.controller.js';
 
 const electricianRouter = express.Router();
@@ -52,6 +52,30 @@ electricianRouter.patch(
   authMiddleware,
   authorizeRoles("ELECTRICIAN"),
   rejectRequest
+);
+
+// accept a pending request
+electricianRouter.patch(
+  "/requests/:requestId/accept",
+  authMiddleware,
+  authorizeRoles("ELECTRICIAN"),
+  acceptRequest
+);
+
+// start a job
+electricianRouter.patch(
+  "/requests/:requestId/start",
+  authMiddleware,
+  authorizeRoles("ELECTRICIAN"),
+  startJob
+);
+
+// complete a job
+electricianRouter.patch(
+  "/requests/:requestId/complete",
+  authMiddleware,
+  authorizeRoles("ELECTRICIAN"),
+  completeJob
 );
 
 // get all rating of electricians  public route
