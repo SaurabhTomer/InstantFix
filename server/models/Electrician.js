@@ -37,7 +37,7 @@ const electricianSchema = new mongoose.Schema({
   },
   hourlyRate: {
     type: Number,
-    required: true
+    default: 0
   },
   address: {
     street: { type: String, trim: true },

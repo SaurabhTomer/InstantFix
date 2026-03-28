@@ -7,7 +7,7 @@ const rateLimiter = async (req, res, next) => {
 
     const attempts = await redis.get(key)
 
-    if (attempts >= 5) {
+    if (attempts >= 20) {
       return res.status(429).json({ success: false, message: 'Too many attempts, try after 15 minutes' })
     }
 

@@ -294,7 +294,7 @@ export const logout = async (req, res, next) => {
     if (token) await blacklistAccessToken(token)
 
     if (refreshToken) {
-         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+         const decoded = jwt.decode(refreshToken, process.env.JWT_REFRESH_SECRET);
         if (decoded?.id) await deleteRefreshToken(decoded.id);
     }
 

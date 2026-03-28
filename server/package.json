@@ -6,9 +6,10 @@
   "type": "module",
   "scripts": {
   "dev": "nodemon server.js",
-  "start": "node server.js"
+  "start": "node server.js",
+  "seed:admin": "node scripts/createAdmin.js"
   },
-  
+
   "author": "",
   "license": "ISC",
   "dependencies": {
