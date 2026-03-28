@@ -1,4 +1,10 @@
 const errorHandler = (err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err)
+  }
+
+  console.error(err)
+
   let statusCode = err.statusCode || 500
   let message = err.message || 'Internal server error'
 
@@ -8,7 +14,7 @@ const errorHandler = (err, req, res, next) => {
     message = 'Invalid ID format'
   }
 
-  // mongoose duplicate key (e.g. email already exists)
+  // mongoose duplicate key
   if (err.code === 11000) {
     statusCode = 400
     const field = Object.keys(err.keyValue)[0]
@@ -30,6 +36,11 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === 'TokenExpiredError') {
     statusCode = 401
     message = 'Token expired'
+  }
+
+  // hide unknown errors in production
+  if (process.env.NODE_ENV === 'production' && !err.isOperational) {
+    message = 'Something went wrong'
   }
 
   res.status(statusCode).json({
