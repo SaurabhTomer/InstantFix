@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import axios from 'axios'
 import { HiOutlineArrowLeft, HiOutlineArrowRight, HiOutlinePhotograph, HiOutlineX } from 'react-icons/hi'
 import { MdElectricBolt } from 'react-icons/md'
+import Toast from '../../components/Toast'
 
 const categories = [
   { icon: '💡', title: 'Wiring & Rewiring' },
@@ -20,6 +21,7 @@ const Booking = () => {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [showToast, setShowToast] = useState(false)
 
   const [formData, setFormData] = useState({
     category: '',
@@ -81,7 +83,14 @@ const Booking = () => {
         withCredentials: true
       })
 
-      navigate('/customer/requests')
+        setLoading(false)  // pehle loading band karo
+    setShowToast(true) // phir toast dikhao
+
+      // 3 second baad navigate karo
+      setTimeout(() => {
+        navigate('/customer/requests')
+      }, 3000)
+
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong')
     } finally {
@@ -91,6 +100,13 @@ const Booking = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+    {/* toast  */}
+       <Toast
+      message="Request submitted successfully!"
+      show={showToast}
+      onClose={() => setShowToast(false)}
+    />
 
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
