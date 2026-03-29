@@ -46,6 +46,9 @@ export const getMyRequests = async (req, res, next) => {
       .limit(limit)
       .populate('electrician', 'name phone rating')
 
+    console.log(requests);
+    
+
     return res.status(200).json({
       success: true,
       requests,

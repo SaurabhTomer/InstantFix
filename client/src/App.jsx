@@ -5,6 +5,7 @@ import ForgotPassword from './pages/ForgotPassword'
 import Home from './pages/Home'
    import Dashboard from './pages/customer/Dashboard'
    import Booking from './pages/customer/Booking'
+import RequestHistory from './pages/customer/RequestHistory'
 
 const App = () => {
   return (
@@ -17,6 +18,7 @@ const App = () => {
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
         <Route path="/pending" element={<div>Account Pending Approval</div>} />
         <Route path="/" element={<Home />} />
+        <Route path="/customer/requests" element={<RequestHistory />} />
         <Route path="/customer/dashboard" element={<Dashboard />} />
         <Route path="/customer/booking" element={<Booking />} />
       </Routes>
