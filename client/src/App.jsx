@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import Home from './pages/Home'
    import Dashboard from './pages/customer/Dashboard'
+   import Booking from './pages/customer/Booking'
 
 const App = () => {
   return (
@@ -17,6 +18,7 @@ const App = () => {
         <Route path="/pending" element={<div>Account Pending Approval</div>} />
         <Route path="/" element={<Home />} />
         <Route path="/customer/dashboard" element={<Dashboard />} />
+        <Route path="/customer/booking" element={<Booking />} />
       </Routes>
     </BrowserRouter>
   )

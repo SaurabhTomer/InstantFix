@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 
 const categories = [
@@ -12,6 +13,10 @@ const categories = [
 ]
 
 const Categories = () => {
+
+
+const navigate = useNavigate()
+
   const [selected, setSelected] = useState(null)
 
   return (
@@ -64,11 +69,12 @@ const Categories = () => {
               Ready to book this service?
             </p>
           </div>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-xl transition">
+          <button onClick={() => navigate('/customer/booking')} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-xl transition">
             Book Now
           </button>
         </div>
       )}
+      
 
     </section>
   )

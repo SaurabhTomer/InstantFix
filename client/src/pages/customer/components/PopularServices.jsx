@@ -1,3 +1,6 @@
+import { useNavigate } from 'react-router-dom'
+
+
 const services = [
   {
     icon: '💡',
@@ -56,6 +59,7 @@ const services = [
 ]
 
 const PopularServices = () => {
+  const navigate = useNavigate()
   return (
     <section className="bg-gray-50 px-6 py-10">
       <div className="max-w-7xl mx-auto">
@@ -108,9 +112,10 @@ const PopularServices = () => {
                   <p className="text-xs text-gray-400">Duration</p>
                   <p className="text-xs font-medium text-gray-600">{service.time}</p>
                 </div>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition">
+                <button onClick={() => navigate('/customer/booking')} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition">
                   Book
                 </button>
+                
               </div>
             </div>
           ))}
