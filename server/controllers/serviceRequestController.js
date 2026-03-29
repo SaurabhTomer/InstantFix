@@ -3,9 +3,12 @@ import ServiceRequest from '../models/ServiceRequest.js'
 // @route POST /api/requests
 export const createRequest = async (req, res, next) => {
   try {
-    console.time("loopTime");
-    const { category, description, location } = req.body;
+    const { category, description } = req.body
     const address = req.body.address ? JSON.parse(req.body.address) : {}
+    const location = req.body.location ? JSON.parse(req.body.location) : {
+      type: 'Point',
+      coordinates: [0, 0]
+    }
 
     const photos = req.files ? req.files.map(file => file.path) : []
 
@@ -20,7 +23,6 @@ export const createRequest = async (req, res, next) => {
     console.log(request);
     
 
-    console.timeEnd("loopTime");
     return res.status(201).json({ success: true, request })
   } catch (error) {
     next(error)

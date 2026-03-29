@@ -1,10 +1,12 @@
-import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { HiOutlineLocationMarker } from 'react-icons/hi'
 import { MdElectricBolt } from 'react-icons/md'
+import useUserLocation from '../../../hooks/useUserLocation'
+
 
 const Hero = () => {
   const { user } = useSelector((state) => state.auth)
+  const location = useUserLocation()
 
   return (
     <section className="bg-blue-600 px-6 py-12">
@@ -16,7 +18,11 @@ const Hero = () => {
           {/* Location */}
           <div className="flex items-center gap-2 bg-blue-500 w-fit px-3 py-1.5 rounded-xl mb-4">
             <HiOutlineLocationMarker size={16} className="text-yellow-400" />
-            <span className="text-blue-100 text-sm">Agra, Uttar Pradesh</span>
+            {location.loading ? (
+              <span className="text-blue-100 text-sm">Fetching location...</span>
+            ) : (
+              <span className="text-blue-100 text-sm">{location.city}</span>
+            )}
           </div>
 
           <h1 className="text-4xl font-bold text-white leading-tight">

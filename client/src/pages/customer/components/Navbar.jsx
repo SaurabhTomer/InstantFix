@@ -4,8 +4,12 @@ import { useSelector } from 'react-redux'
 import { HiOutlineLocationMarker, HiOutlineChevronDown, HiOutlineSearch } from 'react-icons/hi'
 import { MdElectricBolt } from 'react-icons/md'
 import Logo from '../../../components/Logo'
+import useUserLocation from '../../../hooks/useUserLocation'
 
 const Navbar = () => {
+
+   const location = useUserLocation();
+
   const [workDropdown, setWorkDropdown] = useState(false)
   const { user } = useSelector((state) => state.auth)
 
@@ -20,9 +24,13 @@ const Navbar = () => {
         <div className="flex items-center gap-3 flex-1 max-w-2xl">
 
           {/* Location */}
-          <div className="flex items-center gap-1 text-gray-600 cursor-pointer hover:text-blue-600 transition shrink-0">
+            <div className="flex items-center gap-1 text-gray-600 cursor-pointer hover:text-blue-600 transition shrink-0">
             <HiOutlineLocationMarker size={18} className="text-blue-600" />
-            <span className="text-sm font-medium">Agra, UP</span>
+            {location.loading ? (
+              <span className="text-sm text-gray-400">Fetching...</span>
+            ) : (
+              <span className="text-sm font-medium">{location.city}</span>
+            )}
             <HiOutlineChevronDown size={14} />
           </div>
 

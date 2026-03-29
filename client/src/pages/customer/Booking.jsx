@@ -5,6 +5,8 @@ import axios from 'axios'
 import { HiOutlineArrowLeft, HiOutlineArrowRight, HiOutlinePhotograph, HiOutlineX } from 'react-icons/hi'
 import { MdElectricBolt } from 'react-icons/md'
 import Toast from '../../components/Toast'
+import useUserLocation from '../../hooks/useUserLocation'
+
 
 const categories = [
   { icon: '💡', title: 'Wiring & Rewiring' },
@@ -18,6 +20,9 @@ const categories = [
 ]
 
 const Booking = () => {
+
+  const location = useUserLocation()  // hook add karo
+
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -73,7 +78,13 @@ const Booking = () => {
       data.append('category', formData.category)
       data.append('description', formData.description)
       data.append('address', JSON.stringify(formData.address))
+      // coordinates add karo
+      data.append('location', JSON.stringify({
+        type: 'Point',
+        coordinates: [location.lng, location.lat] // GeoJSON — longitude pehle, latitude baad
+      }))
       formData.photos.forEach(photo => data.append('photos', photo))
+
 
       await axios.post('http://localhost:5000/api/requests', data, {
         headers: {
@@ -83,8 +94,8 @@ const Booking = () => {
         withCredentials: true
       })
 
-        setLoading(false)  // pehle loading band karo
-    setShowToast(true) // phir toast dikhao
+      setLoading(false)  // pehle loading band karo
+      setShowToast(true) // phir toast dikhao
 
       // 3 second baad navigate karo
       setTimeout(() => {
@@ -101,12 +112,12 @@ const Booking = () => {
   return (
     <div className="min-h-screen bg-gray-50">
 
-    {/* toast  */}
-       <Toast
-      message="Request submitted successfully!"
-      show={showToast}
-      onClose={() => setShowToast(false)}
-    />
+      {/* toast  */}
+      <Toast
+        message="Request submitted successfully!"
+        show={showToast}
+        onClose={() => setShowToast(false)}
+      />
 
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-4 sticky top-0 z-10">
@@ -127,13 +138,12 @@ const Booking = () => {
         <div className="flex items-center gap-2 max-w-md">
           {[1, 2, 3].map((s) => (
             <div key={s} className="flex items-center flex-1">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${
-                step === s
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-all ${step === s
                   ? 'bg-blue-600 text-white'
                   : step > s
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-100 text-gray-400'
-              }`}>
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-400'
+                }`}>
                 {step > s ? (
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
@@ -174,16 +184,14 @@ const Booking = () => {
                   <div
                     key={i}
                     onClick={() => setFormData({ ...formData, category: cat.title })}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border cursor-pointer transition-all ${
-                      formData.category === cat.title
+                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border cursor-pointer transition-all ${formData.category === cat.title
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-100 bg-white hover:border-blue-200'
-                    }`}
+                      }`}
                   >
                     <span className="text-2xl">{cat.icon}</span>
-                    <p className={`text-xs font-medium text-center ${
-                      formData.category === cat.title ? 'text-blue-600' : 'text-gray-700'
-                    }`}>
+                    <p className={`text-xs font-medium text-center ${formData.category === cat.title ? 'text-blue-600' : 'text-gray-700'
+                      }`}>
                       {cat.title}
                     </p>
                   </div>
