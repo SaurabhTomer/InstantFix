@@ -10,6 +10,7 @@ import redis from './config/redis.js'
 import router from './Routes/authRoutes.js'
 import errorHandler from './middleware/errorHandler.js'
 import ServiceRouter from './Routes/serviceRequestRoutes.js'
+import adminRouter from './Routes/adminRoutes.js'
 
 const app = express()
 
@@ -25,6 +26,7 @@ app.use(cookieParser())
 
 app.use('/api/auth', router)
 app.use('/api/requests', ServiceRouter)
+app.use('/api/admin', adminRouter)
 
 
 

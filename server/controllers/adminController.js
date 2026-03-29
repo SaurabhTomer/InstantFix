@@ -5,13 +5,23 @@ import ServiceRequest from '../models/ServiceRequest.js'
 // @route GET /api/admin/stats
 export const getStats = async (req, res, next) => {
   try {
-    const totalUsers = await User.countDocuments({ role: 'customer' })
-    const totalElectricians = await Electrician.countDocuments()
-    const pendingElectricians = await Electrician.countDocuments({ approvalStatus: 'pending' })
-    const approvedElectricians = await Electrician.countDocuments({ approvalStatus: 'approved' })
-    const totalRequests = await ServiceRequest.countDocuments()
-    const pendingRequests = await ServiceRequest.countDocuments({ status: 'pending' })
-    const completedRequests = await ServiceRequest.countDocuments({ status: 'completed' })
+    const [
+      totalUsers,
+      totalElectricians,
+      pendingElectricians,
+      approvedElectricians,
+      totalRequests,
+      pendingRequests,
+      completedRequests
+    ] = await Promise.all([
+      User.countDocuments({ role: 'customer' }),
+      Electrician.countDocuments(),
+      Electrician.countDocuments({ approvalStatus: 'pending' }),
+      Electrician.countDocuments({ approvalStatus: 'approved' }),
+      ServiceRequest.countDocuments(),
+      ServiceRequest.countDocuments({ status: 'pending' }),
+      ServiceRequest.countDocuments({ status: 'completed' })
+    ])
 
     return res.status(200).json({
       success: true,
