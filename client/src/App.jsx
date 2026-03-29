@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Register from './pages/Register'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
+import Home from './pages/Home'
 
 const App = () => {
   return (
@@ -14,6 +15,7 @@ const App = () => {
         <Route path="/electrician/dashboard" element={<div>Electrician Dashboard</div>} />
         <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
         <Route path="/pending" element={<div>Account Pending Approval</div>} />
+        <Route path="/" element={<Home />} />
       </Routes>
     </BrowserRouter>
   )
