@@ -20,7 +20,7 @@ export const createRequest = async (req, res, next) => {
       location,
       photos
     })
-    console.log(request);
+    // console.log(request);
     
 
     return res.status(201).json({ success: true, request })
