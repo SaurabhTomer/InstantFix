@@ -19,6 +19,11 @@ const serviceRequestSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  photos: [
+  {
+    type: String  // file path store hoga
+  }
+],
   address: {
     street: { type: String },
     city: { type: String },

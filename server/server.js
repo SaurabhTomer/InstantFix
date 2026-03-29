@@ -9,6 +9,7 @@ import connectDB from './config/db.js'
 import redis from './config/redis.js'
 import router from './Routes/authRoutes.js'
 import errorHandler from './middleware/errorHandler.js'
+import ServiceRouter from './Routes/serviceRequestRoutes.js'
 
 const app = express()
 
@@ -22,11 +23,10 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-app.use('/api/auth', router);
+app.use('/api/auth', router)
+app.use('/api/requests', ServiceRouter)
 
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'InstantFix API is running' })
-})
+
 
 app.use(errorHandler)
 
