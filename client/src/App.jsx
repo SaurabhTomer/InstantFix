@@ -1,28 +1,48 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Register from './pages/Register'
-import Login from './pages/Login'
-import ForgotPassword from './pages/ForgotPassword'
+
 import Home from './pages/Home'
-   import Dashboard from './pages/customer/Dashboard'
-   import Booking from './pages/customer/Booking'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
+import Dashboard from './pages/customer/Dashboard'
+import Booking from './pages/customer/Booking'
 import RequestHistory from './pages/customer/RequestHistory'
 import Profile from './pages/customer/Profile'
+import Unauthorized from './pages/Unauthorized'
+import ProtectedRoute from './components/ProtectedRoute'
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/electrician/dashboard" element={<div>Electrician Dashboard</div>} />
-        <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
-        <Route path="/pending" element={<div>Account Pending Approval</div>} />
+        {/* Public */}
         <Route path="/" element={<Home />} />
-        <Route path="/customer/profile" element={<Profile />} />
-        <Route path="/customer/requests" element={<RequestHistory />} />
-        <Route path="/customer/dashboard" element={<Dashboard />} />
-        <Route path="/customer/booking" element={<Booking />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
+
+        {/* Customer */}
+        <Route path="/customer/dashboard" element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/customer/booking" element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <Booking />
+          </ProtectedRoute>
+        } />
+        <Route path="/customer/requests" element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <RequestHistory />
+          </ProtectedRoute>
+        } />
+        <Route path="/customer/profile" element={
+          <ProtectedRoute allowedRoles={['customer']}>
+            <Profile />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   )
