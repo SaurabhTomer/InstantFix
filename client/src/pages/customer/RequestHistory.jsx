@@ -38,6 +38,8 @@ const RequestHistory = () => {
           withCredentials: true
         }
       )
+    //   console.log(res);
+      
       setRequests(res.data.requests)
       setPagination(res.data.pagination)
     } catch (err) {

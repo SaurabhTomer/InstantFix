@@ -3,7 +3,9 @@ import ServiceRequest from '../models/ServiceRequest.js'
 // @route POST /api/requests
 export const createRequest = async (req, res, next) => {
   try {
-    const { category, description, address, location } = req.body
+    console.time("loopTime");
+    const { category, description, location } = req.body;
+    const address = req.body.address ? JSON.parse(req.body.address) : {}
 
     const photos = req.files ? req.files.map(file => file.path) : []
 
@@ -18,6 +20,7 @@ export const createRequest = async (req, res, next) => {
     console.log(request);
     
 
+    console.timeEnd("loopTime");
     return res.status(201).json({ success: true, request })
   } catch (error) {
     next(error)
@@ -46,7 +49,7 @@ export const getMyRequests = async (req, res, next) => {
       .limit(limit)
       .populate('electrician', 'name phone rating')
 
-    console.log(requests);
+    // console.log(requests);
     
 
     return res.status(200).json({
