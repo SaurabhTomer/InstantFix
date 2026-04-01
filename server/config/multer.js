@@ -5,15 +5,17 @@ import cloudinary from './cloudinary.js'
 const storage = new CloudinaryStorage({
   cloudinary,
   params: {
-  folder: 'instantfix/requests',
-  allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-  transformation: [{ width: 500, quality: 'auto:low' }]
- }
+    folder: 'instantfix/profiles',   // ✅ change here
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [
+      { width: 300, height: 300, crop: 'fill', quality: 'auto' } // ✅ profile optimized
+    ]
+  }
 })
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }
+  limits: { fileSize: 2 * 1024 * 1024 } // ✅ 2MB enough for profile
 })
 
 export default upload

@@ -1,9 +1,12 @@
 import express from 'express'
 import { updateProfile } from '../controllers/userController.js'
 import auth from '../middleware/auth.js'
+import upload from '../config/upload.js'  
 
 const userRoute = express.Router()
 
-userRoute.put('/profile', auth, updateProfile)
+router.put('/update-profile', auth, upload.single('avatar'), updateProfile)
 
 export default userRoute
+
+

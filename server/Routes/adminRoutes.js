@@ -1,25 +1,32 @@
 import express from 'express'
 import {
-  getStats,
-  getElectricians,
-  approveElectrician,
-  rejectElectrician,
-  getAllRequests,
-  getUsers
+    getStats,
+    getElectricians,
+    getElectricianById,
+    updateElectricianStatus,
+    getAllRequests,
+    getUsers
 } from '../controllers/adminController.js'
 import auth from '../middleware/auth.js'
 import roles from '../middleware/roles.js'
 
 const adminRouter = express.Router()
 
-// sab routes admin only
+// All routes — admin only
 adminRouter.use(auth, roles('admin'))
 
+// Stats
 adminRouter.get('/stats', getStats)
-adminRouter.get('/electricians', getElectricians)
-adminRouter.put('/electricians/:id/approve', approveElectrician)
-adminRouter.put('/electricians/:id/reject', rejectElectrician)
-adminRouter.get('/requests', getAllRequests)
+
+// Users
 adminRouter.get('/users', getUsers)
+
+// Electricians
+adminRouter.get('/electricians',          getElectricians)
+adminRouter.get('/electricians/:id',      getElectricianById)
+adminRouter.put('/electricians/:id/status', updateElectricianStatus)
+
+// Service Requests
+adminRouter.get('/requests', getAllRequests)
 
 export default adminRouter

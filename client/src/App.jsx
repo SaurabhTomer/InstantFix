@@ -10,6 +10,11 @@ import RequestHistory from './pages/customer/RequestHistory'
 import Profile from './pages/customer/Profile'
 import Unauthorized from './pages/Unauthorized'
 import ProtectedRoute from './components/ProtectedRoute'
+import Requests from './pages/admin/Requests'
+import Electricians from './pages/admin/Electricians'
+import Dashbaord from './pages/admin/Dashbaord'
+import ElectricianDashboard from './pages/electrician/ElectricianDashboard'
+
 
 const App = () => {
   const { checking } = useRefreshToken()
@@ -50,6 +55,32 @@ const App = () => {
           <Profile />
         </ProtectedRoute>
       } />
+
+
+      <Route path="/electrician/dashboard" element={
+        <ProtectedRoute allowedRoles={['electrician']}>
+          <ElectricianDashboard />
+        </ProtectedRoute>
+      } />
+
+      // Admin routes
+      <Route path="/admin/dashboard" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Dashbaord />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/electricians" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Electricians />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/requests" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Requests />
+        </ProtectedRoute>
+      } />
+
+
     </Routes>
   )
 }

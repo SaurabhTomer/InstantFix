@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar'
 import { HiOutlineUsers, HiOutlineClipboardList, HiOutlineClock, HiOutlineCheckCircle } from 'react-icons/hi'
 import { MdElectricBolt } from 'react-icons/md'
 
-const Dashboard = () => {
+const Dashbaord = () => {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const { accessToken } = useSelector((state) => state.auth)
@@ -70,4 +70,4 @@ const Dashboard = () => {
   )
 }
 
-export default Dashboard
+export default Dashbaord
