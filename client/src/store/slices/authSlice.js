@@ -17,8 +17,8 @@ const authSlice = createSlice({
     clearAuth: (state) => {
       state.user = null
       state.accessToken = null
-    }
-  }
+    },
+  },
 })
 
 export const { setUser, setAccessToken, clearAuth } = authSlice.actions
