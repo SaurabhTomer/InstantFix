@@ -6,11 +6,11 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 import connectDB from './config/db.js'
-import redis from './config/redis.js'
 import router from './Routes/authRoutes.js'
 import errorHandler from './middleware/errorHandler.js'
-import ServiceRouter from './Routes/serviceRequestRoutes.js'
+import ServiceRouter from './Routes/requestRoutes.js'
 import adminRouter from './Routes/adminRoutes.js'
+import electricianRouter from './Routes/electricianRoutes.js'
 
 const app = express()
 
@@ -27,8 +27,7 @@ app.use(cookieParser())
 app.use('/api/auth', router)
 app.use('/api/requests', ServiceRouter)
 app.use('/api/admin', adminRouter)
-
-
+app.use('/api/electrician', electricianRouter)
 
 app.use(errorHandler)
 
