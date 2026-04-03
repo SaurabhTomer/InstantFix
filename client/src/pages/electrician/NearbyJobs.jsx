@@ -1,12 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import axios from 'axios'
-import {
-  setNearbyLoading, setNearbyJobs, setNearbyError,
-} from '../../store/slices/electricianSlice'
+import { setNearbyLoading, setNearbyJobs, setNearbyError } from '../../store/slices/electricianSlice'
+import useGeoLocation from '../../hooks/useGeoLocation'
 import JobCard from '../../components/electrician/JobCard'
 import { PageLoader, EmptyState } from '../../components/shared/Spinner'
-import { FiNavigation, FiAlertCircle, FiRefreshCw } from 'react-icons/fi'
+import { FiNavigation, FiAlertCircle } from 'react-icons/fi'
 
 const RADIUS_OPTIONS = [5, 10, 25, 50]
 
@@ -15,35 +14,9 @@ export default function NearbyJobs() {
   const accessToken = useSelector(s => s.auth.accessToken)
   const { nearbyJobs, nearbyLoading } = useSelector(s => s.electrician)
 
-  const [radius, setRadius]       = useState(10)
-  const [location, setLocation]   = useState(null)
-  const [gpsError, setGpsError]   = useState(null)
-  const [detecting, setDetecting] = useState(false)
-  const [fetched, setFetched]     = useState(false)
-
-  const detectAndFetch = () => {
-    setDetecting(true)
-    setGpsError(null)
-
-    if (!navigator.geolocation) {
-      setGpsError('Geolocation is not supported by your browser.')
-      setDetecting(false)
-      return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords
-        setLocation({ lat: latitude, lng: longitude })
-        setDetecting(false)
-        await fetchNearby(latitude, longitude, radius)
-      },
-      () => {
-        setGpsError('Location access denied. Please enable GPS and try again.')
-        setDetecting(false)
-      }
-    )
-  }
+  const { location, detecting, gpsError, detect } = useGeoLocation()
+  const [radius,  setRadius]  = useState(10)
+  const [fetched, setFetched] = useState(false)
 
   const fetchNearby = async (lat, lng, r) => {
     dispatch(setNearbyLoading())
@@ -56,13 +29,22 @@ export default function NearbyJobs() {
       setFetched(true)
     } catch (err) {
       dispatch(setNearbyError())
-      setGpsError(err.response?.data?.message || 'Failed to fetch nearby jobs.')
     }
   }
 
-  const handleRadiusChange = async (r) => {
+  // jab bhi location change ho fetch karo
+  useEffect(() => {
+    if (location.lat && location.lng) {
+      fetchNearby(location.lat, location.lng, radius)
+    }
+  }, [location.lat, location.lng])
+
+  // radius change hone par bhi fetch karo agar location already hai
+  const handleRadiusChange = (r) => {
     setRadius(r)
-    if (location) await fetchNearby(location.lat, location.lng, r)
+    if (location.lat && location.lng) {
+      fetchNearby(location.lat, location.lng, r)
+    }
   }
 
   return (
@@ -75,7 +57,7 @@ export default function NearbyJobs() {
           <p className="text-xs text-slate-400 mt-0.5">Jobs available around your location</p>
         </div>
         <button
-          onClick={detectAndFetch}
+          onClick={detect}
           disabled={detecting}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-colors disabled:opacity-60 shadow-sm shadow-blue-200"
         >
@@ -83,18 +65,20 @@ export default function NearbyJobs() {
             ? <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             : <FiNavigation className="text-sm" />
           }
-          {detecting ? 'Detecting...' : location ? 'Refresh' : 'Detect Location'}
+          {detecting ? 'Detecting...' : location.lat ? 'Refresh' : 'Detect Location'}
         </button>
       </div>
 
       {/* location status */}
-      {location && (
+      {location.lat && (
         <div className="flex items-center gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
           <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shrink-0" />
           <div>
-            <p className="text-xs font-semibold text-blue-700">Location detected</p>
+            <p className="text-xs font-semibold text-blue-700">
+              {location.city || 'Location detected'}
+            </p>
             <p className="text-[11px] text-blue-500 font-mono mt-0.5">
-              {location.lat.toFixed(5)}° N, {location.lng.toFixed(5)}° E
+              {location.lat}° N, {location.lng}° E
             </p>
           </div>
         </div>
@@ -130,8 +114,8 @@ export default function NearbyJobs() {
         </div>
       </div>
 
-      {/* initial state - not yet detected */}
-      {!location && !detecting && !gpsError && (
+      {/* initial state */}
+      {!location.lat && !detecting && !gpsError && (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 text-center">
           <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <FiNavigation className="text-blue-400 text-2xl" />
@@ -139,7 +123,7 @@ export default function NearbyJobs() {
           <p className="text-sm font-semibold text-slate-600 mb-1">Detect your location</p>
           <p className="text-xs text-slate-400 mb-5">Click the button above to find jobs near you</p>
           <button
-            onClick={detectAndFetch}
+            onClick={detect}
             className="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors"
           >
             Get My Location
