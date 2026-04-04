@@ -2,6 +2,8 @@ import { Routes, Route } from 'react-router-dom'
 import useRefreshToken from './hooks/useRefreshToken'
 import ProtectedRoute from './components/ProtectedRoute'
 import ElectricianDashboard from './pages/electrician/ElectricianDashboard'
+import CustomerDashboard from './pages/customer/CustomerDashboard'
+
 
 const App = () => {
   const { checking } = useRefreshToken()
@@ -24,7 +26,13 @@ const App = () => {
           <ElectricianDashboard />
         </ProtectedRoute>
       } />
-      
+
+      <Route path="/customer/dashboard" element={
+        <ProtectedRoute allowedRoles={['customer']}>
+          <CustomerDashboard />
+        </ProtectedRoute>
+      } />
+
     </Routes>
   )
 }
