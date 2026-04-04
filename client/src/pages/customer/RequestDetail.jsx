@@ -24,7 +24,7 @@ const STATUS_CONFIG = {
   cancelled: { label: 'Cancelled', color: 'text-red-600',     bg: 'bg-red-50',     border: 'border-red-200',     dot: 'bg-red-400' },
 }
 
-export default function RequestDetail({ onNavigate, selectedId }) {
+export default function RequestDetail({ onNavigate, onBack, selectedId }) {
   const dispatch    = useDispatch()
   const accessToken = useSelector(s => s.auth.accessToken)
   const { selectedRequest, selectedLoading, cancellingId } = useSelector(s => s.customer)
@@ -115,7 +115,7 @@ export default function RequestDetail({ onNavigate, selectedId }) {
         {/* back + header */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => onNavigate('myRequests')}
+             onClick={onBack} 
             className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 hover:bg-blue-50 hover:border-blue-200 text-slate-500 hover:text-blue-600 transition-all"
           >
             <FiArrowLeft className="text-base" />

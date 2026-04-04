@@ -23,22 +23,22 @@ import {
 const electricianRouter = express.Router()
 
 // Apply authentication and electrician role middleware to all routes
-router.use(auth, roles('electrician'))
+electricianRouter.use(auth, roles('electrician'))
 
 // ─── Profile Management ────────────────────────────────────────────────
-router.get('/profile', getElectricianProfile)
-router.put('/profile', upload.single('avatar'), updateElectricianProfile)
-router.put('/location', updateLocation)
+electricianRouter.get('/profile', getElectricianProfile)
+electricianRouter.put('/profile', upload.single('avatar'), updateElectricianProfile)
+electricianRouter.put('/location', updateLocation)
 
 // ─── Job Management ───────────────────────────────────────────────────
-router.get('/jobs', getMyJobs)
-router.get('/jobs/stats', getJobStats)
-router.get('/jobs/:id', getJobById)
-router.put('/jobs/:id/accept', acceptJob)
-router.put('/jobs/:id/start', startJob)
-router.put('/jobs/:id/complete', completeJob)
+electricianRouter.get('/jobs', getMyJobs)
+electricianRouter.get('/jobs/stats', getJobStats)
+electricianRouter.get('/jobs/:id', getJobById)
+electricianRouter.put('/jobs/:id/accept', acceptJob)
+electricianRouter.put('/jobs/:id/start', startJob)
+electricianRouter.put('/jobs/:id/complete', completeJob)
 
 // ─── Nearby Jobs ─────────────────────────────────────────────────────
-router.get('/jobs/nearby', getNearbyJobs)
+electricianRouter.get('/jobs/nearby', getNearbyJobs)
 
 export default electricianRouter

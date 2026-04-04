@@ -1,5 +1,5 @@
 import {
-  FiZap, FiGrid, FiPlusCircle,
+   FiGrid, FiPlusCircle,
   FiList, FiUser,
 } from 'react-icons/fi'
 import { useSelector } from 'react-redux'
@@ -28,15 +28,7 @@ export default function CustomerSidebar({ activePage, onNavigate }) {
 
   return (
     <aside className="w-56 bg-white border-r border-slate-100 flex flex-col shrink-0 h-full">
-      {/* brand */}
-      <div className="flex items-center gap-2.5 px-5 h-14 border-b border-slate-100 shrink-0">
-        <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center shrink-0">
-          <FiZap className="text-white text-sm" />
-        </div>
-        <span className="text-[15px] font-bold text-slate-900 tracking-tight">
-          Instant<span className="text-blue-600">Fix</span>
-        </span>
-      </div>
+    
 
       {/* nav */}
       <nav className="flex-1 overflow-y-auto py-3 space-y-4">

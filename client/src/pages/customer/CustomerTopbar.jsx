@@ -5,8 +5,8 @@ import { FiBell, FiZap, FiChevronDown, FiLogOut, FiPlusCircle } from 'react-icon
 import { clearAuth } from '../../store/slices/authSlice'
 
 export default function CustomerTopbar({ onNavigate }) {
-  const dispatch    = useDispatch()
-  const user        = useSelector(s => s.auth.user)
+  const dispatch = useDispatch()
+  const user = useSelector(s => s.auth.user)
   const accessToken = useSelector(s => s.auth.accessToken)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -17,7 +17,7 @@ export default function CustomerTopbar({ onNavigate }) {
         {},
         { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
       )
-    } catch {}
+    } catch { }
     dispatch(clearAuth())
     window.location.href = '/login'
   }
@@ -29,8 +29,11 @@ export default function CustomerTopbar({ onNavigate }) {
   return (
     <header className="h-14 bg-white border-b border-slate-100 flex items-center justify-between px-6 shrink-0 z-20">
 
-      {/* left */}
-      <div className="flex items-center gap-2.5">
+      {/* left — brand click pe home */}
+      <button
+        onClick={() => onNavigate('home')}
+        className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
+      >
         <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
           <FiZap className="text-white text-sm" />
         </div>
@@ -38,7 +41,7 @@ export default function CustomerTopbar({ onNavigate }) {
           Instant<span className="text-blue-600">Fix</span>
         </span>
         <span className="hidden sm:block text-xs text-slate-300 ml-1">/ Customer</span>
-      </div>
+      </button>
 
       {/* right */}
       <div className="flex items-center gap-3">
