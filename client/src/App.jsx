@@ -29,7 +29,7 @@ const App = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* customer */}
-      <Route path="/customer/dashboard" element={
+      <Route path="/customer/*" element={
         <ProtectedRoute allowedRoles={['customer']}>
           <CustomerDashboard />
         </ProtectedRoute>

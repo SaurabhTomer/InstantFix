@@ -13,6 +13,7 @@ import {
   FiUser, FiPhone, FiStar, FiDollarSign,
   FiX, FiZap, FiCheck, FiAlertCircle,
 } from 'react-icons/fi'
+import { useParams } from 'react-router-dom'
 
 const STATUS_STEPS = ['pending', 'accepted', 'started', 'completed']
 
@@ -24,7 +25,9 @@ const STATUS_CONFIG = {
   cancelled: { label: 'Cancelled', color: 'text-red-600',     bg: 'bg-red-50',     border: 'border-red-200',     dot: 'bg-red-400' },
 }
 
-export default function RequestDetail({ onNavigate, onBack, selectedId }) {
+
+export default function RequestDetail({ onNavigate }) {
+  const { id } = useParams()
   const dispatch    = useDispatch()
   const accessToken = useSelector(s => s.auth.accessToken)
   const { selectedRequest, selectedLoading, cancellingId } = useSelector(s => s.customer)
@@ -32,15 +35,15 @@ export default function RequestDetail({ onNavigate, onBack, selectedId }) {
   const [activePhoto, setActivePhoto] = useState(null)
 
   useEffect(() => {
-    if (!selectedId) return
+    if (!id) return
     fetchDetail()
-  }, [selectedId])
+  }, [id])
 
   const fetchDetail = async () => {
     dispatch(setSelectedLoading())
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/requests/${selectedId}`,
+        `http://localhost:5000/api/requests/${id}`,
         { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
       )
       dispatch(setSelectedRequest(res.data.request))
@@ -54,14 +57,14 @@ export default function RequestDetail({ onNavigate, onBack, selectedId }) {
   }
 
   const handleCancel = async () => {
-    dispatch(setCancellingId(selectedId))
+    dispatch(setCancellingId(id))
     try {
       await axios.put(
-        `http://localhost:5000/api/requests/${selectedId}/cancel`,
+        `http://localhost:5000/api/requests/${id}/cancel`,
         {},
         { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
       )
-      dispatch(updateRequestStatus({ id: selectedId, status: 'cancelled' }))
+      dispatch(updateRequestStatus({ id: id, status: 'cancelled' }))
       dispatch(setSelectedRequest({ ...selectedRequest, status: 'cancelled' }))
       dispatch(showToast({ msg: 'Request cancelled', type: 'info' }))
     } catch (err) {

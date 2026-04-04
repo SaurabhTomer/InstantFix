@@ -1,44 +1,29 @@
-import { useState, useCallback } from 'react'
-import CustomerSidebar from './CustomerSidebar'
-import CustomerTopbar from './CustomerTopbar'
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import CustomerSidebar  from './CustomerSidebar'
+import CustomerTopbar   from './CustomerTopbar'
 import Toast from '../../components/shared/Toast'
-import Home from './Home'
-import CreateRequest from './CreateRequest'
-import MyRequests from './MyRequests'
-import RequestDetail from './RequestDetail'
-import CustomerProfile from './CustomerProfile'
-
-const PAGES = {
-  home:          Home,
-  createRequest: CreateRequest,
-  myRequests:    MyRequests,
-  requestDetail: RequestDetail,
-  profile:       CustomerProfile,
-}
+import Home             from './Home'
+import CreateRequest    from './CreateRequest'
+import MyRequests       from './MyRequests'
+import RequestDetail    from './RequestDetail'
+import CustomerProfile  from './CustomerProfile'
 
 export default function CustomerDashboard() {
-  const [activePage, setActivePage] = useState('home')
-  const [selectedId, setSelectedId] = useState(null)
-  const [history,    setHistory]    = useState(['home'])
+  const navigate    = useNavigate()
+  const { pathname } = useLocation()
 
-  const navigateTo = useCallback((page, id = null) => {
-    setHistory(prev => [...prev, page])
-    setSelectedId(id)
-    setActivePage(page)
-  }, [])
+  const navigateTo = (page, id = null) => {
+    if      (page === 'home')          navigate('/customer')
+    else if (page === 'createRequest') navigate('/customer/create-request', { state: { category: id } })
+    else if (page === 'myRequests')    navigate('/customer/requests')
+    else if (page === 'requestDetail') navigate(`/customer/requests/${id}`)
+    else if (page === 'profile')       navigate('/customer/profile')
+  }
 
-  const goBack = useCallback(() => {
-    setHistory(prev => {
-      if (prev.length <= 1) return prev
-      const newHistory = prev.slice(0, -1)
-      const prevPage   = newHistory[newHistory.length - 1]
-      setActivePage(prevPage)
-      setSelectedId(null)
-      return newHistory
-    })
-  }, [])
-
-  const PageComponent = PAGES[activePage] || Home
+  const activePage =
+    pathname.includes('create-request') ? 'createRequest' :
+    pathname.includes('requests')       ? 'myRequests'    :
+    pathname.includes('profile')        ? 'profile'       : 'home'
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -46,11 +31,13 @@ export default function CustomerDashboard() {
       <div className="flex flex-1 overflow-hidden">
         <CustomerSidebar activePage={activePage} onNavigate={navigateTo} />
         <main className="flex-1 overflow-y-auto p-6">
-          <PageComponent
-            onNavigate={navigateTo}
-            onBack={goBack}
-            selectedId={selectedId}
-          />
+          <Routes>
+            <Route path="/"                element={<Home            onNavigate={navigateTo} />} />
+            <Route path="/create-request"  element={<CreateRequest   onNavigate={navigateTo} />} />
+            <Route path="/requests"        element={<MyRequests      onNavigate={navigateTo} />} />
+            <Route path="/requests/:id"    element={<RequestDetail   onNavigate={navigateTo} />} />
+            <Route path="/profile"         element={<CustomerProfile onNavigate={navigateTo} />} />
+          </Routes>
         </main>
       </div>
       <Toast slice="customer" />

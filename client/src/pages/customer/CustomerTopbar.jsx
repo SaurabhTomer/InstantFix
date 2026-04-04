@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { FiBell, FiZap, FiChevronDown, FiLogOut, FiPlusCircle } from 'react-icons/fi'
 import { clearAuth } from '../../store/slices/authSlice'
 
 export default function CustomerTopbar({ onNavigate }) {
+  const navigate = useNavigate()
   const dispatch = useDispatch()
   const user = useSelector(s => s.auth.user)
   const accessToken = useSelector(s => s.auth.accessToken)
@@ -31,7 +33,7 @@ export default function CustomerTopbar({ onNavigate }) {
 
       {/* left — brand click pe home */}
       <button
-        onClick={() => onNavigate('home')}
+        onClick={() => navigate('/customer')}
         className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
       >
         <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center">
