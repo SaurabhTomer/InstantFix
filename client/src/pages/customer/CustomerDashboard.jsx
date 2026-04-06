@@ -7,6 +7,8 @@ import CreateRequest    from './CreateRequest'
 import MyRequests       from './MyRequests'
 import RequestDetail    from './RequestDetail'
 import CustomerProfile  from './CustomerProfile'
+import ChatPage     from './ChatPage'
+import FloatingChat from '../../components/shared/FloatingChat'
 
 export default function CustomerDashboard() {
   const navigate    = useNavigate()
@@ -18,12 +20,14 @@ export default function CustomerDashboard() {
     else if (page === 'myRequests')    navigate('/customer/requests')
     else if (page === 'requestDetail') navigate(`/customer/requests/${id}`)
     else if (page === 'profile')       navigate('/customer/profile')
+    else if (page === 'chat')    navigate('/customer/chat') 
   }
 
   const activePage =
     pathname.includes('create-request') ? 'createRequest' :
     pathname.includes('requests')       ? 'myRequests'    :
     pathname.includes('profile')        ? 'profile'       : 'home'
+    pathname.includes('chat')           ? 'chat'          : 'home' 
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
@@ -37,10 +41,14 @@ export default function CustomerDashboard() {
             <Route path="/requests"        element={<MyRequests      onNavigate={navigateTo} />} />
             <Route path="/requests/:id"    element={<RequestDetail   onNavigate={navigateTo} />} />
             <Route path="/profile"         element={<CustomerProfile onNavigate={navigateTo} />} />
+            <Route path="/requests/:id"    element={<RequestDetail   onNavigate={navigateTo} />} />
+            <Route path="/profile"         element={<CustomerProfile onNavigate={navigateTo} />} />
+            <Route path="/chat"            element={<ChatPage />} />   {/* ← add this */}
           </Routes>
         </main>
       </div>
       <Toast slice="customer" />
+      <FloatingChat />  
     </div>
   )
 }

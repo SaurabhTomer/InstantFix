@@ -18,19 +18,19 @@ import { useParams, useNavigate } from 'react-router-dom'
 const STATUS_STEPS = ['pending', 'accepted', 'started', 'completed']
 
 const STATUS_CONFIG = {
-  pending:   { label: 'Pending',   color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200',   dot: 'bg-amber-400' },
-  accepted:  { label: 'Accepted',  color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200',    dot: 'bg-blue-500' },
-  started:   { label: 'Started',   color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-200',  dot: 'bg-indigo-500' },
+  pending: { label: 'Pending', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-400' },
+  accepted: { label: 'Accepted', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', dot: 'bg-blue-500' },
+  started: { label: 'Started', color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200', dot: 'bg-indigo-500' },
   completed: { label: 'Completed', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-  cancelled: { label: 'Cancelled', color: 'text-red-600',     bg: 'bg-red-50',     border: 'border-red-200',     dot: 'bg-red-400' },
+  cancelled: { label: 'Cancelled', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', dot: 'bg-red-400' },
 }
 
 
 export default function RequestDetail() {
- 
+
   const { id } = useParams()
   const navigate = useNavigate()
-  const dispatch    = useDispatch()
+  const dispatch = useDispatch()
   const accessToken = useSelector(s => s.auth.accessToken)
   const { selectedRequest, selectedLoading, cancellingId } = useSelector(s => s.customer)
   const [cancelModal, setCancelModal] = useState(false)
@@ -55,10 +55,48 @@ export default function RequestDetail() {
         type: 'error',
       }))
       // onNavigate('myRequests')
-      navigate('/customer/requests') 
+      navigate('/customer/requests')
     }
   }
 
+  const handleOnlinePayment = async () => {
+    // create order
+    const { data } = await axios.post(
+      'http://localhost:5000/api/payments/create-order',
+      { requestId: req._id },
+      { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
+    )
+
+    // open Razorpay checkout
+    const options = {
+      key: data.keyId,
+      amount: data.amount * 100,
+      currency: 'INR',
+      order_id: data.orderId,
+      name: 'InstantFix',
+      description: `Payment for ${req.category}`,
+      handler: async (response) => {
+        // verify on backend
+        await axios.post(
+          'http://localhost:5000/api/payments/verify',
+          {
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            paymentId: data.paymentId,
+          },
+          { headers: { Authorization: `Bearer ${accessToken}` }, withCredentials: true }
+        )
+        // refresh request detail
+        fetchDetail()
+      },
+      prefill: { name: user?.name, contact: user?.phone },
+      theme: { color: '#2563eb' },
+    }
+
+    const rzp = new window.Razorpay(options)
+    rzp.open()
+  }
   const handleCancel = async () => {
     dispatch(setCancellingId(id))
     try {
@@ -84,7 +122,7 @@ export default function RequestDetail() {
   if (!selectedRequest) return null
 
   const req = selectedRequest
-  const sc  = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending
+  const sc = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending
   const currentStep = STATUS_STEPS.indexOf(req.status)
 
   return (
@@ -149,7 +187,7 @@ export default function RequestDetail() {
             </h3>
             <div className="flex items-center">
               {STATUS_STEPS.map((step, i) => {
-                const isDone    = currentStep >= i
+                const isDone = currentStep >= i
                 const isCurrent = currentStep === i
                 return (
                   <div key={step} className="flex items-center flex-1 last:flex-none">

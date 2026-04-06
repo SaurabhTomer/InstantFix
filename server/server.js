@@ -9,9 +9,11 @@ import connectDB from './config/db.js'
 import router from './Routes/authRoutes.js'
 import errorHandler from './middleware/errorHandler.js'
 import ServiceRouter from './Routes/requestRoutes.js'
-import reviewRoutes from './routes/reviewRoutes.js'
 import adminRouter from './Routes/adminRoutes.js'
 import electricianRouter from './Routes/electricianRoutes.js'
+import paymentRouter from './Routes/paymentRoutes.js'
+import reviewRouter from './Routes/reviewRoutes.js'
+import chatRouter from './Routes/chatRoutes.js'
 
 const app = express()
 
@@ -29,7 +31,9 @@ app.use('/api/auth', router)
 app.use('/api/requests', ServiceRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api/electrician', electricianRouter)
-app.use('/api/reviews', reviewRoutes)
+app.use('/api/reviews', reviewRouter)
+app.use('/api/payments', paymentRouter)
+app.use('/api/chat', chatRouter)
 
 app.use(errorHandler)
 
