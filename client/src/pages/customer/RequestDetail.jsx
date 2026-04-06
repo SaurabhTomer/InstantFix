@@ -13,7 +13,7 @@ import {
   FiUser, FiPhone, FiStar, FiDollarSign,
   FiX, FiZap, FiCheck, FiAlertCircle,
 } from 'react-icons/fi'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 
 const STATUS_STEPS = ['pending', 'accepted', 'started', 'completed']
 
@@ -26,8 +26,10 @@ const STATUS_CONFIG = {
 }
 
 
-export default function RequestDetail({ onNavigate }) {
+export default function RequestDetail() {
+ 
   const { id } = useParams()
+  const navigate = useNavigate()
   const dispatch    = useDispatch()
   const accessToken = useSelector(s => s.auth.accessToken)
   const { selectedRequest, selectedLoading, cancellingId } = useSelector(s => s.customer)
@@ -52,7 +54,8 @@ export default function RequestDetail({ onNavigate }) {
         msg: err.response?.data?.message || 'Failed to load request',
         type: 'error',
       }))
-      onNavigate('myRequests')
+      // onNavigate('myRequests')
+      navigate('/customer/requests') 
     }
   }
 
@@ -118,7 +121,8 @@ export default function RequestDetail({ onNavigate }) {
         {/* back + header */}
         <div className="flex items-center gap-3">
           <button
-             onClick={onBack} 
+            //  onClick={onBack} 
+            onClick={() => navigate(-1)}
             className="w-9 h-9 flex items-center justify-center rounded-xl border border-slate-200 hover:bg-blue-50 hover:border-blue-200 text-slate-500 hover:text-blue-600 transition-all"
           >
             <FiArrowLeft className="text-base" />
