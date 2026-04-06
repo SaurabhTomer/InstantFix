@@ -5,13 +5,13 @@ import {
   getMyReviews,
   checkReview,
 } from '../controllers/reviewController.js'
-import { protect } from '../middleware/authMiddleware.js'  // your existing auth middleware
+import  auth  from '../middleware/auth.js'  // your existing auth middleware
 
 const reviewRouter = express.Router()
 
-reviewRouter.post('/',                              protect, createReview)           // customer submits
-reviewRouter.get('/my',                             protect, getMyReviews)           // customer's reviews
-reviewRouter.get('/check/:requestId',               protect, checkReview)            // already reviewed?
+reviewRouter.post('/',                              auth, createReview)           // customer submits
+reviewRouter.get('/my',                             auth, getMyReviews)           // customer's reviews
+reviewRouter.get('/check/:requestId',               auth, checkReview)            // already reviewed?
 reviewRouter.get('/electrician/:electricianId',              getElectricianReviews)  // public — no auth needed
 
 export default reviewRouter

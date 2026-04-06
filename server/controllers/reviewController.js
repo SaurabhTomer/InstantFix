@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 import Review from '../models/Review.js'
-import Request from '../models/Request.js'
+import ServiceRequest from '../models/ServiceRequest.js'
 
 // POST /api/reviews — customer submits a review
 export const createReview = async (req, res) => {

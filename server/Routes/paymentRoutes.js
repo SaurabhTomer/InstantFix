@@ -5,13 +5,13 @@ import {
   markCashPaid,
   getPaymentByRequest,
 } from '../controllers/paymentController.js'
-import { protect } from '../middleware/authMiddleware.js'
+import auth from '../middleware/auth.js'
 
 const paymentRouter = express.Router()
 
-paymentRouter.post('/create-order',          protect, createOrder)           // customer
-paymentRouter.post('/verify',                protect, verifyPayment)         // customer
-paymentRouter.post('/cash',                  protect, markCashPaid)          // electrician
-paymentRouter.get('/request/:requestId',     protect, getPaymentByRequest)   // both
+paymentRouter.post('/create-order',          auth, createOrder)           // customer
+paymentRouter.post('/verify',                auth, verifyPayment)         // customer
+paymentRouter.post('/cash',                  auth, markCashPaid)          // electrician
+paymentRouter.get('/request/:requestId',     auth, getPaymentByRequest)   // both
 
 export default paymentRouter

@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import razorpay from '../config/razorpay.js'
 import Payment from '../models/Payment.js'
-import Request from '../models/Request.js'
+import ServiceRequest from '../models/ServiceRequest.js'
 
 
 // POST /api/payments/create-order

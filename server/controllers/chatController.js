@@ -1,5 +1,5 @@
 import groq from '../config/groq.js'
-import Request from '../models/Request.js'
+import ServiceRequest from '../models/ServiceRequest.js'
 
 const SYSTEM_PROMPT = `
 You are FixBot, an intelligent assistant for InstantFix — an on-demand electrician service app based in India.
@@ -40,7 +40,7 @@ export const chat = async (req, res) => {
     // Optionally inject request context if user is asking about a specific request
     let contextBlock = ''
     if (requestId) {
-      const request = await Request.findOne({
+      const request = await ServiceRequest.findOne({
         _id:      requestId,
         customer: customerId,
       }).populate('electrician', 'name phone')
