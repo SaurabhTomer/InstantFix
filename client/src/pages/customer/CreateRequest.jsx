@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+
 import { useDispatch, useSelector } from 'react-redux'
 import axios from 'axios'
 import {
@@ -10,16 +10,18 @@ import {
   FiMonitor, FiAlertCircle, FiMapPin, FiNavigation,
   FiUpload, FiX, FiCheck, FiChevronDown,
 } from 'react-icons/fi'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 const CATEGORIES = [
-  { key: 'Wiring',           icon: FiZap,         color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200' },
-  { key: 'Fan Installation', icon: FiWind,        color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-200' },
-  { key: 'AC Service',       icon: FiSun,         color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200' },
-  { key: 'Water Heater',     icon: FiDroplet,     color: 'text-cyan-600',    bg: 'bg-cyan-50',    border: 'border-cyan-200' },
-  { key: 'Panel Repair',     icon: FiTool,        color: 'text-rose-600',    bg: 'bg-rose-50',    border: 'border-rose-200' },
-  { key: 'Smart Home',       icon: FiMonitor,     color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { key: 'Emergency',        icon: FiAlertCircle, color: 'text-red-600',     bg: 'bg-red-50',     border: 'border-red-200' },
-  { key: 'Other',            icon: FiTool,        color: 'text-slate-600',   bg: 'bg-slate-50',   border: 'border-slate-200' },
+  { key: 'Wiring', icon: FiZap, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
+  { key: 'Fan Installation', icon: FiWind, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+  { key: 'AC Service', icon: FiSun, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
+  { key: 'Water Heater', icon: FiDroplet, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
+  { key: 'Panel Repair', icon: FiTool, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
+  { key: 'Smart Home', icon: FiMonitor, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  { key: 'Emergency', icon: FiAlertCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
+  { key: 'Other', icon: FiTool, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
 ]
 
 // ── Success Popup ─────────────────────────────────────────
@@ -81,24 +83,26 @@ function SuccessPopup({ onDone }) {
 }
 
 // ── Main Component ────────────────────────────────────────
-export default function CreateRequest({ onNavigate, selectedId }) {
-  const dispatch    = useDispatch()
+
+export default function CreateRequest({ onNavigate }) {
+  const dispatch = useDispatch()
   const accessToken = useSelector(s => s.auth.accessToken)
-  const { creating, createSuccess } = useSelector(s => s.customer)
+  const navigate = useNavigate()
+  const { state: routeState } = useLocation()
 
   const { location, detecting, gpsError, detect } = useGeoLocation()
 
   // form state
-  const [category,     setCategory]     = useState(selectedId || '')
-  const [description,  setDescription]  = useState('')
-  const [photos,       setPhotos]       = useState([])      // File[]
-  const [previews,     setPreviews]     = useState([])      // base64[]
+  const [category, setCategory] = useState(routeState?.category || '')
+  const [description, setDescription] = useState('')
+  const [photos, setPhotos] = useState([])      // File[]
+  const [previews, setPreviews] = useState([])      // base64[]
   const [locationMode, setLocationMode] = useState('gps')   // 'gps' | 'manual'
 
   // address fields
-  const [street,  setStreet]  = useState('')
-  const [city,    setCity]    = useState('')
-  const [state,   setState]   = useState('')
+  const [street, setStreet] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
   const [pincode, setPincode] = useState('')
 
   // manual coords
@@ -123,7 +127,7 @@ export default function CreateRequest({ onNavigate, selectedId }) {
       dispatch(showToast({ msg: 'Maximum 5 photos allowed', type: 'error' }))
       return
     }
-    const newFiles    = [...photos, ...files]
+    const newFiles = [...photos, ...files]
     const newPreviews = newFiles.map(f => URL.createObjectURL(f))
     setPhotos(newFiles)
     setPreviews(newPreviews)
@@ -161,10 +165,10 @@ export default function CreateRequest({ onNavigate, selectedId }) {
 
     try {
       const formData = new FormData()
-      formData.append('category',    category)
+      formData.append('category', category)
       formData.append('description', description)
-      formData.append('address',     JSON.stringify({ street, city, state, pincode }))
-      formData.append('location',    JSON.stringify({
+      formData.append('address', JSON.stringify({ street, city, state, pincode }))
+      formData.append('location', JSON.stringify({
         type: 'Point',
         coordinates: [lng, lat],   // backend expects [lng, lat]
       }))
@@ -196,7 +200,7 @@ export default function CreateRequest({ onNavigate, selectedId }) {
   // success popup done — redirect to myRequests
   const handlePopupDone = () => {
     dispatch(setCreateSuccess({ success: false, request: null }))
-    onNavigate('myRequests')
+    navigate('/customer/requests', { replace: true })
   }
 
   const inputCls = `
@@ -482,13 +486,13 @@ export default function CreateRequest({ onNavigate, selectedId }) {
           >
             {creating
               ? <>
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Submitting...
-                </>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Submitting...
+              </>
               : <>
-                  <FiZap className="text-base" />
-                  Confirm & Submit Request
-                </>
+                <FiZap className="text-base" />
+                Confirm & Submit Request
+              </>
             }
           </button>
         </form>
