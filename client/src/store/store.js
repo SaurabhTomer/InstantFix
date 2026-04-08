@@ -1,14 +1,16 @@
-import { configureStore } from '@reduxjs/toolkit'
-import authReducer from './slices/authSlice'
-import electricianReducer from './slices/electricianSlice'
-import customerReducer from './slices/customerSlice'
+import { configureStore } from "@reduxjs/toolkit";
+import authReducer from "./authSlice";
+import electricianReducer from "./electricianSlice";
+import customerReducer from "./customerSlice";
+import adminReducer from "./adminSlice";
+import themeReducer from "./themeSlice";
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     auth: authReducer,
     electrician: electricianReducer,
     customer: customerReducer,
+    admin: adminReducer,
+    theme: themeReducer,
   },
-})
-
-export default store
+});

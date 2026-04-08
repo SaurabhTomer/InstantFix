@@ -1,4 +1,3 @@
-
 import { useDispatch, useSelector } from 'react-redux'
 import axios from 'axios'
 import {
@@ -8,20 +7,20 @@ import useGeoLocation from '../../hooks/useGeoLocation'
 import {
   FiZap, FiWind, FiSun, FiDroplet, FiTool,
   FiMonitor, FiAlertCircle, FiMapPin, FiNavigation,
-  FiUpload, FiX, FiCheck, FiChevronDown,
+  FiUpload, FiX, FiCheck,
 } from 'react-icons/fi'
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 const CATEGORIES = [
-  { key: 'Wiring', icon: FiZap, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { key: 'Fan Installation', icon: FiWind, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-  { key: 'AC Service', icon: FiSun, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { key: 'Water Heater', icon: FiDroplet, color: 'text-cyan-600', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-  { key: 'Panel Repair', icon: FiTool, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
-  { key: 'Smart Home', icon: FiMonitor, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { key: 'Emergency', icon: FiAlertCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200' },
-  { key: 'Other', icon: FiTool, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' },
+  { key: 'Wiring',           icon: FiZap,         color: 'text-blue-600',    bg: 'bg-blue-50',    border: 'border-blue-200'    },
+  { key: 'Fan Installation', icon: FiWind,         color: 'text-indigo-600',  bg: 'bg-indigo-50',  border: 'border-indigo-200'  },
+  { key: 'AC Service',       icon: FiSun,          color: 'text-amber-600',   bg: 'bg-amber-50',   border: 'border-amber-200'   },
+  { key: 'Water Heater',     icon: FiDroplet,      color: 'text-cyan-600',    bg: 'bg-cyan-50',    border: 'border-cyan-200'    },
+  { key: 'Panel Repair',     icon: FiTool,         color: 'text-rose-600',    bg: 'bg-rose-50',    border: 'border-rose-200'    },
+  { key: 'Smart Home',       icon: FiMonitor,      color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+  { key: 'Emergency',        icon: FiAlertCircle,  color: 'text-red-600',     bg: 'bg-red-50',     border: 'border-red-200'     },
+  { key: 'Other',            icon: FiTool,         color: 'text-slate-600',   bg: 'bg-slate-50',   border: 'border-slate-200'   },
 ]
 
 // ── Success Popup ─────────────────────────────────────────
@@ -50,7 +49,6 @@ function SuccessPopup({ onDone }) {
               <FiCheck className="text-white text-2xl" />
             </div>
           </div>
-          {/* spinning ring */}
           <svg className="absolute inset-0 animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="36" fill="none" stroke="#10b981" strokeWidth="3"
               strokeDasharray="180 50" strokeLinecap="round" />
@@ -63,7 +61,6 @@ function SuccessPopup({ onDone }) {
           An electrician will be assigned shortly.
         </p>
 
-        {/* countdown */}
         <div className="flex items-center justify-center gap-2 mb-5">
           <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
             <span className="text-lg font-bold text-blue-600">{count}</span>
@@ -83,27 +80,28 @@ function SuccessPopup({ onDone }) {
 }
 
 // ── Main Component ────────────────────────────────────────
+export default function CreateRequest() {
+  const dispatch      = useDispatch()
+  const accessToken   = useSelector(s => s.auth.accessToken)
+  const creating      = useSelector(s => s.customer.creating)
+  const createSuccess = useSelector(s => s.customer.createSuccess)
 
-export default function CreateRequest({ onNavigate }) {
-  const dispatch = useDispatch()
-  const accessToken = useSelector(s => s.auth.accessToken)
-  const navigate = useNavigate()
+  const navigate              = useNavigate()
   const { state: routeState } = useLocation()
 
   const { location, detecting, gpsError, detect } = useGeoLocation()
 
-  // form state
-  const [category, setCategory] = useState(routeState?.category || '')
-  const [description, setDescription] = useState('')
-  const [photos, setPhotos] = useState([])      // File[]
-  const [previews, setPreviews] = useState([])      // base64[]
-  const [locationMode, setLocationMode] = useState('gps')   // 'gps' | 'manual'
+  const [category,     setCategory]     = useState(routeState?.category || '')
+  const [description,  setDescription]  = useState('')
+  const [photos,       setPhotos]       = useState([])
+  const [previews,     setPreviews]     = useState([])
+  const [locationMode, setLocationMode] = useState('gps')
 
   // address fields
-  const [street, setStreet] = useState('')
-  const [city, setCity] = useState('')
-  const [state, setState] = useState('')
-  const [pincode, setPincode] = useState('')
+  const [street,       setStreet]       = useState('')
+  const [city,         setCity]         = useState('')
+  const [addressState, setAddressState] = useState('')
+  const [pincode,      setPincode]      = useState('')
 
   // manual coords
   const [manualLat, setManualLat] = useState('')
@@ -111,36 +109,32 @@ export default function CreateRequest({ onNavigate }) {
 
   const fileRef = useRef()
 
-  // jab GPS se location aaye toh city fill karo
+  // auto-fill city from GPS
   useEffect(() => {
     if (location.city) {
       const parts = location.city.split(', ')
       setCity(parts[0] || '')
-      setState(parts[1] || '')
+      setAddressState(parts[1] || '')
     }
   }, [location.city])
 
-  // photo select
   const handlePhotos = (e) => {
     const files = Array.from(e.target.files)
     if (photos.length + files.length > 5) {
       dispatch(showToast({ msg: 'Maximum 5 photos allowed', type: 'error' }))
       return
     }
-    const newFiles = [...photos, ...files]
+    const newFiles    = [...photos, ...files]
     const newPreviews = newFiles.map(f => URL.createObjectURL(f))
     setPhotos(newFiles)
     setPreviews(newPreviews)
   }
 
   const removePhoto = (i) => {
-    const f = photos.filter((_, idx) => idx !== i)
-    const p = previews.filter((_, idx) => idx !== i)
-    setPhotos(f)
-    setPreviews(p)
+    setPhotos(photos.filter((_, idx) => idx !== i))
+    setPreviews(previews.filter((_, idx) => idx !== i))
   }
 
-  // get final lat/lng based on mode
   const getFinalCoords = () => {
     if (locationMode === 'gps') {
       return { lat: parseFloat(location.lat), lng: parseFloat(location.lng) }
@@ -152,25 +146,27 @@ export default function CreateRequest({ onNavigate }) {
     e.preventDefault()
 
     if (!category) {
-      dispatch(showToast({ msg: 'Please select a category', type: 'error' })); return
+      dispatch(showToast({ msg: 'Please select a category', type: 'error' }))
+      return
     }
 
     const { lat, lng } = getFinalCoords()
 
     if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
-      dispatch(showToast({ msg: 'Valid location is required', type: 'error' })); return
+      dispatch(showToast({ msg: 'Valid location is required', type: 'error' }))
+      return
     }
 
     dispatch(setCreating(true))
 
     try {
       const formData = new FormData()
-      formData.append('category', category)
+      formData.append('category',    category)
       formData.append('description', description)
-      formData.append('address', JSON.stringify({ street, city, state, pincode }))
-      formData.append('location', JSON.stringify({
+      formData.append('address',     JSON.stringify({ street, city, state: addressState, pincode }))
+      formData.append('location',    JSON.stringify({
         type: 'Point',
-        coordinates: [lng, lat],   // backend expects [lng, lat]
+        coordinates: [lng, lat],
       }))
       photos.forEach(f => formData.append('photos', f))
 
@@ -197,7 +193,6 @@ export default function CreateRequest({ onNavigate }) {
     }
   }
 
-  // success popup done — redirect to myRequests
   const handlePopupDone = () => {
     dispatch(setCreateSuccess({ success: false, request: null }))
     navigate('/customer/requests', { replace: true })
@@ -211,7 +206,6 @@ export default function CreateRequest({ onNavigate }) {
 
   return (
     <>
-      {/* success popup */}
       {createSuccess && <SuccessPopup onDone={handlePopupDone} />}
 
       <div className="max-w-2xl space-y-6 animate-fade-in">
@@ -234,7 +228,7 @@ export default function CreateRequest({ onNavigate }) {
             </h2>
             <div className="grid grid-cols-4 gap-2">
               {CATEGORIES.map(cat => {
-                const Icon = cat.icon
+                const Icon       = cat.icon
                 const isSelected = category === cat.key
                 return (
                   <button
@@ -293,7 +287,6 @@ export default function CreateRequest({ onNavigate }) {
               <span className="text-xs text-slate-400 font-normal ml-1">(optional, max 5)</span>
             </h2>
 
-            {/* previews */}
             {previews.length > 0 && (
               <div className="flex gap-2 flex-wrap mb-3">
                 {previews.map((src, i) => (
@@ -314,7 +307,6 @@ export default function CreateRequest({ onNavigate }) {
               </div>
             )}
 
-            {/* upload area */}
             {photos.length < 5 && (
               <button
                 type="button"
@@ -326,7 +318,9 @@ export default function CreateRequest({ onNavigate }) {
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-semibold text-slate-600">Click to upload photos</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">JPG, PNG up to 5MB · {5 - photos.length} remaining</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    JPG, PNG up to 5MB · {5 - photos.length} remaining
+                  </p>
                 </div>
               </button>
             )}
@@ -448,30 +442,34 @@ export default function CreateRequest({ onNavigate }) {
               </div>
             )}
 
-            {/* address fields — dono modes mein */}
+            {/* address fields */}
             <div className="mt-4 space-y-3">
               <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 Address Details
               </p>
               <input
-                value={street} onChange={e => setStreet(e.target.value)}
+                value={street}
+                onChange={e => setStreet(e.target.value)}
                 placeholder="Street / House No."
                 className={inputCls}
               />
               <div className="grid grid-cols-2 gap-3">
                 <input
-                  value={city} onChange={e => setCity(e.target.value)}
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
                   placeholder="City"
                   className={inputCls}
                 />
                 <input
-                  value={state} onChange={e => setState(e.target.value)}
+                  value={addressState}
+                  onChange={e => setAddressState(e.target.value)}
                   placeholder="State"
                   className={inputCls}
                 />
               </div>
               <input
-                value={pincode} onChange={e => setPincode(e.target.value)}
+                value={pincode}
+                onChange={e => setPincode(e.target.value)}
                 placeholder="Pincode"
                 className={inputCls}
               />
@@ -486,15 +484,16 @@ export default function CreateRequest({ onNavigate }) {
           >
             {creating
               ? <>
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Submitting...
-              </>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Submitting...
+                </>
               : <>
-                <FiZap className="text-base" />
-                Confirm & Submit Request
-              </>
+                  <FiZap className="text-base" />
+                  Confirm & Submit Request
+                </>
             }
           </button>
+
         </form>
       </div>
     </>

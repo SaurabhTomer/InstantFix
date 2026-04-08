@@ -69,7 +69,7 @@ export const chat = async (req, res) => {
     }))
 
     const completion = await groq.chat.completions.create({
-      model:       'llama3-8b-8192',   // fast + free on Groq
+      model:       "llama-3.1-8b-instant",  // fast + free on Groq
       temperature: 0.7,
       max_tokens:  512,
       messages: [

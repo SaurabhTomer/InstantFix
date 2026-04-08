@@ -6,6 +6,9 @@ import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ElectricianDashboard from './pages/electrician/ElectricianDashboard'
 import CustomerDashboard from './pages/customer/CustomerDashboard'
+import LandingPage from './pages/landing/LandingPage'
+import AdminDashboard from "./pages/admin/AdminDashboard"
+
 
 const App = () => {
   const { checking } = useRefreshToken()
@@ -23,9 +26,12 @@ const App = () => {
 
   return (
     <Routes>
+      {/* landing */}
+      <Route path="/" element={<LandingPage />} />
+
       {/* public */}
-      <Route path="/login"           element={<Login />} />
-      <Route path="/register"        element={<Register />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* customer */}
@@ -42,7 +48,13 @@ const App = () => {
         </ProtectedRoute>
       } />
 
-      {/* default */}
+      <Route path="/admin/*" element={
+        <ProtectedRoute role="admin">
+          <AdminDashboard />
+        </ProtectedRoute>
+      } />
+
+      {/* default — only kicks in for unknown paths now */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
