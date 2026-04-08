@@ -2,6 +2,8 @@ import crypto from 'crypto'
 import razorpay from '../config/razorpay.js'
 import Payment from '../models/Payment.js'
 import ServiceRequest from '../models/ServiceRequest.js'
+import { emitToUser } from '../config/socket.js'
+
 
 
 // POST /api/payments/create-order
@@ -104,6 +106,29 @@ export const verifyPayment = async (req, res) => {
     //  Mark request as paid
     await Request.findByIdAndUpdate(payment.request, { paymentStatus: 'paid' })
 
+
+     // Notify electrician that payment has been received
+    emitToUser(payment.electrician, 'payment_received', {
+      message:   'Customer ne online payment kar di',
+      requestId: payment.request,
+      amount:    payment.amount,
+      method:    'online',
+      paidAt:    payment.paidAt
+    })
+
+
+
+    // Notify customer that payment was successful
+    emitToUser(payment.customer, 'payment_success', {
+      message:   'Payment successful',
+      requestId: payment.request,
+      amount:    payment.amount,
+      method:    'online',
+      paidAt:    payment.paidAt
+    })
+
+
+
     res.json({ message: 'Payment verified successfully', payment })
 
   } catch (err) {
@@ -146,6 +171,24 @@ export const markCashPaid = async (req, res) => {
     // Mark request as paid
     await Request.findByIdAndUpdate(requestId, { paymentStatus: 'paid' })
 
+     // Notify customer that electrician has recorded cash payment
+    emitToUser(request.customer, 'payment_success', {
+      message:   'Electrician ne cash payment confirm kar di',
+      requestId: request._id,
+      amount:    payment.amount,
+      method:    'cash',
+      paidAt:    payment.paidAt
+    })
+
+    // Notify electrician — confirmation on their end
+    emitToUser(electricianId, 'payment_received', {
+      message:   'Cash payment successfully recorded',
+      requestId: request._id,
+      amount:    payment.amount,
+      method:    'cash',
+      paidAt:    payment.paidAt
+    })
+    
     res.json({ message: 'Cash payment recorded', payment })
 
   } catch (err) {

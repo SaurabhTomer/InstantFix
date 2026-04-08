@@ -1,4 +1,6 @@
 import ServiceRequest from '../models/ServiceRequest.js'
+import Electrician from '../models/Electrician.js'
+import { emitToUser } from '../config/socket.js'
 
 // ─────────────────────────────────────────────────────────
 // @route POST /api/requests
@@ -68,6 +70,39 @@ export const createRequest = async (req, res, next) => {
       photos
     })
 
+    // Find nearby approved electricians within 5km radius
+    // and notify each one about the new request via socket
+    try {
+      const nearbyElectricians = await Electrician.find({
+        approvalStatus: 'approved',
+        location: {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [lng, lat]
+            },
+            $maxDistance: 5000
+          }
+        }
+      }).select('_id')
+
+      nearbyElectricians.forEach(electrician => {
+        emitToUser(electrician._id, 'new_request', {
+          message: 'A new job request is available near your location',
+          request: {
+            _id: request._id,
+            category: request.category,
+            description: request.description,
+            address: request.address,
+            createdAt: request.createdAt
+          }
+        })
+      })
+    } catch (socketError) {
+      // Socket notification failure should not block the main response
+      console.error('Socket notification failed:', socketError.message)
+    }
+
     return res.status(201).json({ success: true, request })
   } catch (error) {
     next(error)
@@ -81,9 +116,9 @@ export const createRequest = async (req, res, next) => {
 // ─────────────────────────────────────────────────────────
 export const getMyRequests = async (req, res, next) => {
   try {
-    const page  = parseInt(req.query.page)  || 1
+    const page = parseInt(req.query.page) || 1
     const limit = parseInt(req.query.limit) || 10
-    const skip  = (page - 1) * limit
+    const skip = (page - 1) * limit
 
     const filter = { customer: req.user.id }
 
@@ -175,6 +210,15 @@ export const cancelRequest = async (req, res, next) => {
 
     request.status = 'cancelled'
     await request.save()
+
+
+    // Notify assigned electrician if any that request has been cancelled
+    if (request.electrician) {
+      emitToUser(request.electrician, 'request_cancelled', {
+        message: 'Customer ne request cancel kar di',
+        requestId: request._id
+      })
+    }
 
     return res.status(200).json({ success: true, message: 'Request cancelled successfully' })
   } catch (error) {

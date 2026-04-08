@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import ServiceRequest from '../models/ServiceRequest.js'
 import Electrician from '../models/Electrician.js'
+import { emitToUser } from '../config/socket.js'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -176,6 +177,17 @@ export const acceptJob = async (req, res, next) => {
             return res.status(409).json({ success: false, message: 'This job has already been taken or is no longer available' })
         }
 
+          // Notify customer that their request has been accepted
+        emitToUser(job.customer._id, 'request_update', {
+            requestId: job._id,
+            status:    'accepted',
+            message:   `${electrician.name} ne tumhara request accept kar liya`,
+            electrician: {
+                name:       electrician.name,
+                hourlyRate: electrician.hourlyRate
+            }
+        })
+
         return res.status(200).json({ success: true, message: 'Job accepted successfully', job })
     } catch (error) {
         next(error)
@@ -207,6 +219,14 @@ export const startJob = async (req, res, next) => {
                 message: `Cannot start a job with status '${original.status}'. Job must be accepted first.`
             })
         }
+
+          // Notify customer that electrician has started the job
+        emitToUser(job.customer, 'request_update', {
+            requestId: job._id,
+            status:    'started',
+            message:   'Electrician ne kaam shuru kar diya hai',
+            startTime: job.startTime
+        })
 
         return res.status(200).json({
             success: true,
@@ -257,6 +277,16 @@ export const completeJob = async (req, res, next) => {
         await job.save()
 
         await job.populate('customer', 'name phone avatar')
+
+
+          // Notify customer that job is complete and payment is due
+        emitToUser(job.customer._id, 'request_update', {
+            requestId:   job._id,
+            status:      'completed',
+            message:     'Kaam complete ho gaya. Please payment karein.',
+            totalAmount: job.totalAmount,
+            endTime:     job.endTime
+        })
 
         return res.status(200).json({
             success: true,
