@@ -4,6 +4,8 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 
 dotenv.config()
+import { createServer } from 'http'                  
+import { initSocket } from './config/socket.js'
 
 import connectDB from './config/db.js'
 import router from './Routes/authRoutes.js'
@@ -15,7 +17,10 @@ import paymentRouter from './Routes/paymentRoutes.js'
 import reviewRouter from './Routes/reviewRoutes.js'
 import chatRouter from './Routes/chatRoutes.js'
 
+
 const app = express()
+const httpServer = createServer(app)               // http server 
+initSocket(httpServer)                            // socket init kro
 
 connectDB()
 
@@ -23,6 +28,7 @@ app.use(cors({
   origin: process.env.CLIENT_URL,
   credentials: true
 }))
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
@@ -38,6 +44,8 @@ app.use('/api/chat', chatRouter)
 app.use(errorHandler)
 
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => {
+
+
+httpServer.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
 })
