@@ -1,42 +1,96 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
-  Menu, Zap, Star, Clock, Search, Bell, MapPin, ArrowRight
+  Menu, Zap, Star, Clock, Search, Bell, ArrowRight
 } from "lucide-react";
 import UserSidebar from "./UserSidebar";
+import AIChatAssistant from "../../components/AIChatAssistant";
+import FloatingChatButton from "../../components/FloatingChatButton";
 
 export default function UserDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentBanner, setCurrentBanner] = useState(0);
   const [activeCategory, setActiveCategory] = useState(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [greeting, setGreeting] = useState("");
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
 
-  const banners = [
-    {
-      id: 1,
-      label: "Always available",
-      title: "24/7 Emergency Service",
-      subtitle: "Fast response, anytime you need us",
-      gradient: "from-rose-500 to-orange-400",
-      cta: "Book Now",
-    },
-    {
-      id: 2,
-      label: "Certified pros",
-      title: "Verified Electricians",
-      subtitle: "Background-checked experts at your door",
-      gradient: "from-blue-500 to-sky-400",
-      cta: "Browse Experts",
-    },
-    {
-      id: 3,
-      label: "Limited time",
-      title: "20% Off This Month",
-      subtitle: "Save on all services through April",
-      gradient: "from-emerald-500 to-teal-400",
-      cta: "Claim Offer",
-    },
-  ];
+ const banners = [
+  {
+    id: 1,
+    label: "Always available",
+    title: "24/7 Emergency Service",
+    subtitle: "Fast response, anytime you need us",
+    gradient: "from-rose-500 to-orange-400",
+    cta: "Book Now",
+  },
+  {
+    id: 2,
+    label: "Certified pros",
+    title: "Verified Electricians",
+    subtitle: "Background-checked experts at your door",
+    gradient: "from-blue-500 to-sky-400",
+    cta: "Browse Experts",
+  },
+  {
+    id: 3,
+    label: "Limited time",
+    title: "20% Off This Month",
+    subtitle: "Save on all services through April",
+    gradient: "from-emerald-500 to-teal-400",
+    cta: "Claim Offer",
+  },
+  {
+    id: 4,
+    label: "Free add-on",
+    title: "Free Safety Inspection",
+    subtitle: "Book any service, get a full panel check-up free",
+    gradient: "from-violet-500 to-purple-400",
+    cta: "Learn More",
+  },
+  {
+    id: 5,
+    label: "New service",
+    title: "Smart Home Wiring",
+    subtitle: "EV chargers, solar, smart panels — future-ready upgrades",
+    gradient: "from-indigo-500 to-blue-400",
+    cta: "Explore Plans",
+  },
+  {
+    id: 6,
+    label: "Rewards",
+    title: "Refer & Earn",
+    subtitle: "Share with a friend — both get ₹500 off next booking",
+    gradient: "from-amber-500 to-yellow-400",
+    cta: "Invite Friends",
+  },
+  {
+    id: 7,
+    label: "Top rated",
+    title: "Rated 4.9 by 10,000+",
+    subtitle: "Thousands of happy homeowners trust us every month",
+    gradient: "from-orange-500 to-amber-400",
+    cta: "See Reviews",
+  },
+  {
+    id: 8,
+    label: "Best value",
+    title: "Annual Maintenance Plan",
+    subtitle: "One subscription, unlimited priority support all year",
+    gradient: "from-cyan-500 to-teal-400",
+    cta: "View Plans",
+  },
+  {
+    id: 9,
+    label: "Welcome deal",
+    title: "First Booking? 15% Off",
+    subtitle: "New users get a welcome discount on their first service",
+    gradient: "from-fuchsia-500 to-pink-400",
+    cta: "Get Started",
+  },
+];
 
   const categories = [
     { id: 1, name: "Wiring", icon: "⚡", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
@@ -106,6 +160,25 @@ export default function UserDashboard() {
   const nextBanner = () => setCurrentBanner((prev) => (prev + 1) % banners.length);
   const prevBanner = () => setCurrentBanner((prev) => (prev - 1 + banners.length) % banners.length);
 
+  // Set dynamic greeting based on time of day
+  useEffect(() => {
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour < 12) {
+        setGreeting("Good morning");
+      } else if (hour < 17) {
+        setGreeting("Good afternoon");
+      } else {
+        setGreeting("Good evening");
+      }
+    };
+
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -122,22 +195,14 @@ export default function UserDashboard() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
 
             {/* Left */}
-            <div className="flex items-center gap-4">
+            {/* <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
               >
                 <Menu size={20} />
               </button>
-              <Link to="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center">
-                  <Zap size={16} className="text-white" strokeWidth={2.5} />
-                </div>
-                <span className="text-lg font-bold tracking-tight text-gray-900">
-                  Instant<span className="text-amber-500">Fix</span>
-                </span>
-              </Link>
-            </div>
+            </div> */}
 
             {/* Center search */}
             <div className="flex-1 max-w-md hidden sm:flex items-center bg-gray-100 rounded-xl px-4 gap-3 h-10">
@@ -155,13 +220,17 @@ export default function UserDashboard() {
                 <Bell size={18} />
                 <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full" />
               </button>
-              <div className="hidden sm:flex items-center gap-2 text-xs text-gray-500 border border-gray-200 rounded-full px-3 py-1.5 bg-gray-50">
-                <MapPin size={12} className="text-amber-500" />
-                <span>Meerut, UP</span>
-              </div>
-              <div className="w-9 h-9 bg-amber-400 rounded-full flex items-center justify-center text-sm font-semibold text-white">
-                AK
-              </div>
+              <Link to="/user/profile" className="w-9 h-9 bg-amber-400 rounded-full flex items-center justify-center text-sm font-semibold text-white hover:bg-amber-500 transition-colors overflow-hidden">
+                {user?.avatar ? (
+                  <img 
+                    src={user.avatar} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+                )}
+              </Link>
             </div>
           </div>
         </nav>
@@ -171,7 +240,7 @@ export default function UserDashboard() {
 
         {/* Greeting */}
         <div>
-          <p className="text-sm text-gray-400 mb-0.5">Good morning 👋</p>
+          <p className="text-sm text-gray-400 mb-0.5">{greeting} 👋</p>
           <h1 className="text-2xl font-bold text-gray-900">
             What do you need <span className="text-amber-500">fixed</span> today?
           </h1>
@@ -304,6 +373,18 @@ export default function UserDashboard() {
         </div>
 
         </div>
+
+        {/* AI Chat Assistant */}
+        <AIChatAssistant 
+          isOpen={chatOpen} 
+          onClose={() => setChatOpen(false)} 
+        />
+
+        {/* Floating Chat Button */}
+        <FloatingChatButton 
+          onClick={() => setChatOpen(!chatOpen)}
+          isOpen={chatOpen}
+        />
       </div>
     </div>
   );

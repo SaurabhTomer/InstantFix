@@ -18,11 +18,11 @@ api.interceptors.request.use((config) => {
   
   // Add Authorization header if token exists in localStorage
   const token = localStorage.getItem('accessToken');
-  console.log("=== AUTH DEBUG ===");
-  console.log("Token in localStorage:", token ? "Present" : "Missing");
-  console.log("Token value:", token);
-  console.log("Request URL:", config.url);
-  console.log("==================");
+  // console.log("=== AUTH DEBUG ===");
+  // console.log("Token in localStorage:", token ? "Present" : "Missing");
+  // console.log("Token value:", token);
+  // console.log("Request URL:", config.url);
+  // console.log("==================");
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

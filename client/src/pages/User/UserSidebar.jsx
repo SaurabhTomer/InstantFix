@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Clock, User, Settings, HelpCircle, LogOut, X, Menu, Zap } from "lucide-react";
+import { Home, Clock, User, X, Menu, Zap } from "lucide-react";
 
 export default function UserSidebar({ isOpen, onClose, onMenuClick }) {
   const location = useLocation();
@@ -25,20 +25,6 @@ export default function UserSidebar({ isOpen, onClose, onMenuClick }) {
       name: "Profile",
       icon: User,
       path: "/user/profile",
-      color: "text-gray-600"
-    },
-    {
-      id: 4,
-      name: "Settings",
-      icon: Settings,
-      path: "/user/settings",
-      color: "text-gray-600"
-    },
-    {
-      id: 5,
-      name: "Help & Support",
-      icon: HelpCircle,
-      path: "/user/help",
       color: "text-gray-600"
     }
   ];
@@ -86,7 +72,7 @@ export default function UserSidebar({ isOpen, onClose, onMenuClick }) {
           </button>
         </div>
 
-        {/* User Info */}
+        {/* User Info
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-sm font-semibold text-white">
@@ -97,7 +83,7 @@ export default function UserSidebar({ isOpen, onClose, onMenuClick }) {
               <p className="text-sm text-gray-500">amit.kumar@example.com</p>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Navigation */}
         <nav className="flex-1 p-4">
@@ -126,13 +112,12 @@ export default function UserSidebar({ isOpen, onClose, onMenuClick }) {
           </ul>
         </nav>
 
-        {/* Footer */}
+        {/* Footer
         <div className="p-4 border-t border-gray-100">
-          <button className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors">
-            <LogOut size={20} />
-            <span>Logout</span>
-          </button>
-        </div>
+          <div className="text-center text-xs text-gray-500">
+            © 2024 InstantFix
+          </div>
+        </div> */}
       </div>
     </>
   );

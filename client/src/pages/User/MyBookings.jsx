@@ -4,7 +4,7 @@ import api from "../../api/axios.js";
 import { 
   Calendar, Clock, MapPin, User, Phone, Mail, 
   FileText, AlertCircle, CheckCircle, XCircle, 
-  Search, Filter, ArrowLeft, Eye, MessageSquare
+  Search, Filter, ArrowLeft, Eye
 } from "lucide-react";
 
 export default function MyBookings() {
@@ -48,12 +48,19 @@ export default function MyBookings() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with your actual API endpoint
+      console.log("Fetching user bookings...");
       const response = await api.get('/api/requests/my');
-      setBookings(response.data);
+      console.log("Bookings response:", response.data);
+      
+      if (response.data.success) {
+        setBookings(response.data.requests || []);
+      } else {
+        setError(response.data.message || "Failed to load bookings");
+      }
     } catch (error) {
       console.error("Error fetching bookings:", error);
-      setError("Failed to load your bookings. Please try again.");
+      console.error("Error response:", error.response?.data);
+      setError(error.response?.data?.message || "Failed to load your bookings. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -87,6 +94,19 @@ export default function MyBookings() {
   const formatTime = (timeString) => {
     if (!timeString) return "Not scheduled";
     return timeString;
+  };
+
+  // Get status configuration - map backend statuses to frontend
+  const getStatusConfig = (status) => {
+    const statusMap = {
+      'pending': statusConfig.pending,
+      'accepted': statusConfig.accepted,
+      'started': statusConfig.in_progress, // Map 'started' to 'in_progress'
+      'in_progress': statusConfig.in_progress,
+      'completed': statusConfig.completed,
+      'cancelled': statusConfig.cancelled
+    };
+    return statusMap[status] || statusConfig.pending;
   };
 
   if (loading) {
@@ -186,84 +206,92 @@ export default function MyBookings() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {filteredBookings.map((booking) => (
-              <div key={booking._id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                  {/* Main Content */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                          {booking.category}
-                        </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2">
-                          {booking.issueDescription}
-                        </p>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${statusConfig[booking.status]?.color}`}>
-                        {statusConfig[booking.status]?.icon}
-                        {statusConfig[booking.status]?.text}
-                      </div>
-                    </div>
-
-                    {/* Details Grid */}
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <MapPin size={16} className="text-gray-400" />
-                        <span>{booking.address?.city}, {booking.address?.state}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar size={16} className="text-gray-400" />
-                        <span>{formatDate(booking.createdAt)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Clock size={16} className="text-gray-400" />
-                        <span>{formatTime(booking.preferredTime)}</span>
-                      </div>
-                    </div>
-
-                    {/* Images Preview */}
-                    {booking.images && booking.images.length > 0 && (
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="text-xs text-gray-500">Images:</span>
-                        <div className="flex gap-1">
-                          {booking.images.slice(0, 3).map((image, index) => (
-                            <div key={index} className="w-8 h-8 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
-                              <Eye size={12} className="text-gray-400" />
-                            </div>
-                          ))}
-                          {booking.images.length > 3 && (
-                            <div className="w-8 h-8 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
-                              <span className="text-xs text-gray-500">+{booking.images.length - 3}</span>
-                            </div>
-                          )}
+            {filteredBookings.map((booking) => {
+              const statusInfo = getStatusConfig(booking.status);
+              return (
+                <div key={booking._id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    {/* Main Content */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                            {booking.category}
+                          </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {booking.description}
+                          </p>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${statusInfo.color}`}>
+                          {statusInfo.icon}
+                          {statusInfo.text}
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  {/* Actions */}
-                  <div className="flex lg:flex-col gap-2">
-                    <button
-                      onClick={() => {/* TODO: View details modal */}}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Eye size={16} />
-                      View Details
-                    </button>
-                    {booking.status === 'accepted' || booking.status === 'in_progress' ? (
+                      {/* Details Grid */}
+                      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <MapPin size={16} className="text-gray-400" />
+                          <span>{booking.address?.city}, {booking.address?.state}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Calendar size={16} className="text-gray-400" />
+                          <span>{formatDate(booking.createdAt)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600">
+                          <Clock size={16} className="text-gray-400" />
+                          <span>{formatTime(booking.preferredTime)}</span>
+                        </div>
+                      </div>
+
+                      {/* Electrician Info (if assigned) */}
+                      {booking.electrician && (
+                        <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="flex items-center gap-2 text-sm text-amber-800">
+                            <User size={16} />
+                            <span className="font-medium">Assigned Electrician:</span>
+                            <span>{booking.electrician.name}</span>
+                            {booking.electrician.phone && (
+                              <span className="text-amber-600">• {booking.electrician.phone}</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Images Preview */}
+                      {booking.photos && booking.photos.length > 0 && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <span className="text-xs text-gray-500">Images:</span>
+                          <div className="flex gap-1">
+                            {booking.photos.slice(0, 3).map((photo, index) => (
+                              <div key={index} className="w-8 h-8 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                                <Eye size={12} className="text-gray-400" />
+                              </div>
+                            ))}
+                            {booking.photos.length > 3 && (
+                              <div className="w-8 h-8 bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                                <span className="text-xs text-gray-500">+{booking.photos.length - 3}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex lg:flex-col gap-2">
                       <button
-                        onClick={() => {/* TODO: Open chat */}}
-                        className="px-4 py-2 text-sm font-medium text-white bg-amber-400 hover:bg-amber-500 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        onClick={() => navigate(`/user/bookings/${booking._id}`)}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex items-center justify-center gap-2"
                       >
-                        <MessageSquare size={16} />
-                        Chat
+                        <Eye size={16} />
+                        View Details
                       </button>
-                    ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

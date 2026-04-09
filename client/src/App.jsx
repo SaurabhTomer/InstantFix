@@ -9,13 +9,20 @@ import PendingApprovalPage from "./pages/PendingApprovalPage";
 import UserDashboard from "./pages/User/UserDashboard";
 import BookRequest from "./pages/User/BookRequest";
 import MyBookings from "./pages/User/MyBookings";
+import RequestDetails from "./pages/User/RequestDetails";
+import UserProfile from "./pages/User/UserProfile";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
     <Provider store={store}>
       <BrowserRouter>
         <Routes>
-          <Route path="/"                element={<LandingPage />}    />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <LandingPage />
+            </ProtectedRoute>
+          } />
           <Route path="/login"           element={<LoginPage />}      />
           <Route path="/register"        element={<RegisterPage />}   />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -23,6 +30,8 @@ export default function App() {
           <Route path="/user/dashboard"  element={<UserDashboard />}  />
           <Route path="/user/book-request" element={<BookRequest />} />
           <Route path="/user/bookings"   element={<MyBookings />} />
+          <Route path="/user/bookings/:requestId" element={<RequestDetails />} />
+          <Route path="/user/profile"    element={<UserProfile />} />
         </Routes>
       </BrowserRouter>
     </Provider>
