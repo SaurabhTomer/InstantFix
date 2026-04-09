@@ -155,8 +155,15 @@ export const getNearbyJobs = async (req, res, next) => {
             })
         }
 
-        const [lng, lat] = electrician.location.coordinates
+        // ADD this instead:
+let lng, lat
 
+if (req.query.lat && req.query.lng) {
+  lat = parseFloat(req.query.lat)
+  lng = parseFloat(req.query.lng)
+} else {
+  [lng, lat] = electrician.location.coordinates;
+}
         // BUG FIX: (0, 0) check was after destructuring — moved safety check before it.
         // Also: valid coords can be 0 in some edge cases, so checking both being 0
         // simultaneously is a reasonable "unset" sentinel only if your schema defaults to [0,0]

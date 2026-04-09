@@ -10,6 +10,8 @@ import { emitToUser } from '../config/socket.js'
 export const createRequest = async (req, res, next) => {
   try {
     const { category, description } = req.body
+    console.log(req.body);
+    
 
     if (!category || !description) {
       return res.status(400).json({ success: false, message: 'Category and description are required' })

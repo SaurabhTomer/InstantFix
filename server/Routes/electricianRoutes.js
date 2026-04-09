@@ -33,12 +33,12 @@ electricianRouter.put('/location', updateLocation)
 // ─── Job Management ───────────────────────────────────────────────────
 electricianRouter.get('/jobs', getMyJobs)
 electricianRouter.get('/jobs/stats', getJobStats)
-electricianRouter.get('/jobs/:id', getJobById)
+electricianRouter.get('/jobs/nearby', getNearbyJobs)  // specific first
+electricianRouter.get('/jobs/:id', getJobById)         // generic after
 electricianRouter.put('/jobs/:id/accept', acceptJob)
 electricianRouter.put('/jobs/:id/start', startJob)
 electricianRouter.put('/jobs/:id/complete', completeJob)
 
-// ─── Nearby Jobs ─────────────────────────────────────────────────────
-electricianRouter.get('/jobs/nearby', getNearbyJobs)
+
 
 export default electricianRouter

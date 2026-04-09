@@ -1,63 +1,30 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import useRefreshToken from './hooks/useRefreshToken'
-import ProtectedRoute from './components/ProtectedRoute'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import ForgotPassword from './pages/ForgotPassword'
-import ElectricianDashboard from './pages/electrician/ElectricianDashboard'
-import CustomerDashboard from './pages/customer/CustomerDashboard'
-import LandingPage from './pages/landing/LandingPage'
-import AdminDashboard from "./pages/admin/AdminDashboard"
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "./store/store";
+import LandingPage    from "./pages/LandingPage";
+import LoginPage      from "./pages/LoginPage";
+import RegisterPage   from "./pages/RegisterPage";
+import ForgotPassword from "./pages/ForgotPassword";
+import PendingApprovalPage from "./pages/PendingApprovalPage";
+import UserDashboard from "./pages/User/UserDashboard";
+import BookRequest from "./pages/User/BookRequest";
+import MyBookings from "./pages/User/MyBookings";
 
-
-const App = () => {
-  const { checking } = useRefreshToken()
-
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-[3px] border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-400 font-medium">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
+export default function App() {
   return (
-    <Routes>
-      {/* landing */}
-      <Route path="/" element={<LandingPage />} />
-
-      {/* public */}
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-
-      {/* customer */}
-      <Route path="/customer/*" element={
-        <ProtectedRoute allowedRoles={['customer']}>
-          <CustomerDashboard />
-        </ProtectedRoute>
-      } />
-
-      {/* electrician */}
-      <Route path="/electrician/dashboard" element={
-        <ProtectedRoute allowedRoles={['electrician']}>
-          <ElectricianDashboard />
-        </ProtectedRoute>
-      } />
-
-      <Route path="/admin/*" element={
-        <ProtectedRoute role="admin">
-          <AdminDashboard />
-        </ProtectedRoute>
-      } />
-
-      {/* default — only kicks in for unknown paths now */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
-  )
+    <Provider store={store}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/"                element={<LandingPage />}    />
+          <Route path="/login"           element={<LoginPage />}      />
+          <Route path="/register"        element={<RegisterPage />}   />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/pending-approval" element={<PendingApprovalPage />} />
+          <Route path="/user/dashboard"  element={<UserDashboard />}  />
+          <Route path="/user/book-request" element={<BookRequest />} />
+          <Route path="/user/bookings"   element={<MyBookings />} />
+        </Routes>
+      </BrowserRouter>
+    </Provider>
+  );
 }
-
-export default App
