@@ -28,7 +28,13 @@ export default function LoginPage() {
       
       dispatch(setUser(data.user));
       dispatch(setToken(data.accessToken));
-      navigate("/user/dashboard");
+      
+      // Navigate based on user role
+      if (data.user.role === 'electrician') {
+        navigate("/electrician/dashboard");
+      } else {
+        navigate("/user/dashboard");
+      }
     } catch (err) {
       console.error("Login error:", err);
       setError(err.response?.data?.message || "Something went wrong");

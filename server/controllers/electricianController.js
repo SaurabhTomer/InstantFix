@@ -202,7 +202,7 @@ if (req.query.lat && req.query.lng) {
                         pipeline:     [{ $project: { name: 1, phone: 1 } }]
                     }
                 },
-                { $unwind: { path: '$customer', preserveNullAndEmpty: false } },
+                { $unwind: '$customer' },
                 {
                     $addFields: {
                         distanceKm: { $round: [{ $divide: ['$distanceMeters', 1000] }, 2] }

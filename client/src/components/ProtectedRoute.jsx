@@ -8,12 +8,18 @@ export default function ProtectedRoute({ children }) {
   console.log("User:", user);
   console.log("IsLoggedIn:", isLoggedIn);
   console.log("Token:", token ? "Present" : "Missing");
+  console.log("User Role:", user?.role);
   console.log("==========================");
 
-  // If user is authenticated, redirect to dashboard
+  // If user is authenticated, redirect based on role
   if (isLoggedIn && user) {
-    console.log("Redirecting to dashboard - user is authenticated");
-    return <Navigate to="/user/dashboard" replace />;
+    if (user.role === 'electrician') {
+      console.log("Redirecting to electrician dashboard - user is electrician");
+      return <Navigate to="/electrician/dashboard" replace />;
+    } else {
+      console.log("Redirecting to user dashboard - user is customer");
+      return <Navigate to="/user/dashboard" replace />;
+    }
   }
 
   // If not authenticated, show landing page
