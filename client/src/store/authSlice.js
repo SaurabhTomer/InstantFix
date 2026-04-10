@@ -1,24 +1,33 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+// Refresh pe localStorage se hydrate karo
+const token = localStorage.getItem('accessToken');
+const user = (() => {
+  try {
+    const u = localStorage.getItem('user');
+    return u ? JSON.parse(u) : null;
+  } catch { return null; }
+})();
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
-    token: null,
-    isLoggedIn: false,
+    user: user,
+    token: token,
+    isLoggedIn: !!(token && user),  // dono hain tabhi true
     otpSent: false,
     otpVerified: false,
     resetDone: false,
-    isDark: true,       
+    isDark: true,
   },
   reducers: {
     setUser: (state, action) => {
       state.user = action.payload;
       state.isLoggedIn = true;
+      localStorage.setItem('user', JSON.stringify(action.payload)); // save karo
     },
     setToken: (state, action) => {
       state.token = action.payload;
-      // Save token to localStorage for axios interceptor
       if (action.payload) {
         localStorage.setItem('accessToken', action.payload);
       }
@@ -27,22 +36,16 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isLoggedIn = false;
-      // Clear token from localStorage
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user'); // clear karo
     },
-     toggleTheme: (state) => {     
+    toggleTheme: (state) => {
       state.isDark = !state.isDark;
     },
-    setOtpSent: (state, action) => {
-      state.otpSent = action.payload;
-    },
-    setOtpVerified: (state, action) => {
-      state.otpVerified = action.payload;
-    },
-    setResetDone: (state, action) => {
-      state.resetDone = action.payload;
-    },
+    setOtpSent: (state, action) => { state.otpSent = action.payload; },
+    setOtpVerified: (state, action) => { state.otpVerified = action.payload; },
+    setResetDone: (state, action) => { state.resetDone = action.payload; },
     clearForgotPassword: (state) => {
       state.otpSent = false;
       state.otpVerified = false;

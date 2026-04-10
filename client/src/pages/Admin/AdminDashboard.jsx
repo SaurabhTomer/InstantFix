@@ -44,82 +44,41 @@ export default function AdminDashboard() {
       title: "Total Users",
       value: stats.users.total,
       icon: Users,
-      color: "bg-blue-500",
-      change: "+12%",
-      changeType: "increase"
+      color: "bg-blue-500"
     },
     {
       title: "Total Electricians",
       value: stats.electricians.total,
       icon: UserCheck,
-      color: "bg-green-500",
-      change: "+8%",
-      changeType: "increase"
+      color: "bg-green-500"
     },
     {
       title: "Pending Electricians",
       value: stats.electricians.pending,
       icon: Clock,
-      color: "bg-yellow-500",
-      change: "+3",
-      changeType: "neutral"
+      color: "bg-yellow-500"
     },
     {
       title: "Total Requests",
       value: stats.requests.total,
       icon: Calendar,
-      color: "bg-purple-500",
-      change: "+15%",
-      changeType: "increase"
+      color: "bg-purple-500"
     },
     {
       title: "Pending Requests",
       value: stats.requests.pending,
       icon: Activity,
-      color: "bg-orange-500",
-      change: "+5",
-      changeType: "neutral"
+      color: "bg-orange-500"
     },
     {
       title: "Completed Requests",
       value: stats.requests.completed,
       icon: CheckCircle,
-      color: "bg-teal-500",
-      change: "+22%",
-      changeType: "increase"
+      color: "bg-teal-500"
     }
   ];
 
-  const quickActions = [
-    {
-      title: "View All Users",
-      description: "Manage customer accounts",
-      icon: Users,
-      path: "/admin/users",
-      color: "bg-blue-100 text-blue-600 hover:bg-blue-200"
-    },
-    {
-      title: "Manage Electricians",
-      description: "Approve or reject electrician applications",
-      icon: UserCheck,
-      path: "/admin/electricians",
-      color: "bg-green-100 text-green-600 hover:bg-green-200"
-    },
-    {
-      title: "View All Requests",
-      description: "Monitor service requests",
-      icon: Calendar,
-      path: "/admin/requests",
-      color: "bg-purple-100 text-purple-600 hover:bg-purple-200"
-    },
-    {
-      title: "System Status",
-      description: "Check system health and performance",
-      icon: Activity,
-      path: "/admin/system",
-      color: "bg-gray-100 text-gray-600 hover:bg-gray-200"
-    }
-  ];
+ 
 
   if (loading) {
     return (
@@ -152,35 +111,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                <Shield size={16} className="text-white" strokeWidth={2.5} />
-              </div>
-              <span className="ml-3 text-xl font-bold text-gray-900">
-                Admin <span className="text-purple-500">Panel</span>
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.name || 'Admin'}</span>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('accessToken');
-                  localStorage.removeItem('refreshToken');
-                  navigate('/login');
-                }}
-                className="px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Title */}
@@ -216,26 +147,7 @@ export default function AdminDashboard() {
           })}
         </div>
 
-        {/* Quick Actions */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <button
-                  key={index}
-                  onClick={() => navigate(action.path)}
-                  className={`p-6 rounded-xl border border-gray-200 hover:border-gray-300 transition-all ${action.color}`}
-                >
-                  <Icon size={32} className="mb-3" />
-                  <h3 className="font-semibold text-gray-900 mb-1">{action.title}</h3>
-                  <p className="text-sm text-gray-600">{action.description}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+     
 
         {/* Recent Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

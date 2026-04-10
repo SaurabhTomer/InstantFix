@@ -32,7 +32,7 @@ export default function LoginPage() {
       dispatch(setToken(data.accessToken));
       
       // Force admin check for debugging
-      const isAdmin = data.user.email === 'admin@instantfix.com' || data.user.role === 'admin';
+      const isAdmin = data.user.email === 'admin@instantfix.com' ;
       console.log("Is admin user:", isAdmin);
       
       // Navigate based on user role
