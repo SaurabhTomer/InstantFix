@@ -165,7 +165,7 @@ export const acceptJob = async (req, res, next) => {
         const job = await ServiceRequest.findOneAndUpdate(
             { _id: req.params.id, status: 'pending', electrician: null },
             { electrician: req.user.id, status: 'accepted', hourlyRate: electrician.hourlyRate },
-            { new: true }
+            { returnDocument: 'after' }
         ).populate('customer', 'name phone avatar')
 
         if (!job) {
@@ -201,9 +201,9 @@ export const startJob = async (req, res, next) => {
     try {
         const job = await ServiceRequest.findOneAndUpdate(
             { _id: req.params.id, electrician: req.user.id, status: 'accepted' },
-            { status: 'started', startTime: new Date() },
-            { new: true }
-        )
+            { $set: { status: 'started', startTime: new Date() } },
+            { new: true, runValidators: true }
+        ).populate('customer', 'name phone avatar')
 
         if (!job) {
             // Distinguish between not found, not yours, or wrong status

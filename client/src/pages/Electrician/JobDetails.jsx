@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import {
   MapPin, Calendar, Clock, DollarSign, User, Phone, Mail,
   AlertCircle, CheckCircle, XCircle, ArrowLeft, MessageSquare,
-  Star, Navigation, FileText, Camera
+  Star, Navigation, FileText, Camera, PlayCircle, ChevronDown
 } from "lucide-react";
 import api from "../../api/axios.js";
 
@@ -17,10 +17,24 @@ export default function JobDetails() {
   const [error, setError] = useState("");
   const [accepting, setAccepting] = useState(false);
   const [message, setMessage] = useState("");
+  const [statusChanging, setStatusChanging] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   useEffect(() => {
     fetchJobDetails();
   }, [requestId]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showStatusDropdown && !event.target.closest('.relative')) {
+        setShowStatusDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showStatusDropdown]);
 
   // Safe string conversion helper
   const safeString = (value, fallback = '') => {
@@ -119,13 +133,76 @@ export default function JobDetails() {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    setStatusChanging(true);
+    setShowStatusDropdown(false);
+    
+    try {
+      let endpoint = '';
+      switch (newStatus) {
+        case 'started':
+          endpoint = `/api/electrician/jobs/${requestId}/start`;
+          break;
+        case 'completed':
+          endpoint = `/api/electrician/jobs/${requestId}/complete`;
+          break;
+        default:
+          throw new Error('Invalid status change');
+      }
+      
+      const response = await api.put(endpoint);
+      
+      if (response.data.success) {
+        // Update job status
+        setJob(prev => ({
+          ...prev,
+          status: newStatus,
+          ...(response.data.job && response.data.job.startTime && { startTime: response.data.job.startTime }),
+          ...(response.data.job && response.data.job.endTime && { endTime: response.data.job.endTime }),
+          ...(response.data.job && response.data.job.totalAmount && { totalAmount: response.data.job.totalAmount })
+        }));
+        
+        const statusMessages = {
+          'started': 'Job started successfully! Timer is now running.',
+          'completed': 'Job completed successfully!'
+        };
+        
+        alert(statusMessages[newStatus] || 'Status updated successfully!');
+      }
+    } catch (error) {
+      console.error("Error changing status:", error);
+      alert(error.response?.data?.message || `Failed to change status to ${newStatus}`);
+    } finally {
+      setStatusChanging(false);
+    }
+  };
+
+  const getAvailableStatusOptions = () => {
+    if (!job) return [];
+    
+    const options = [];
+    
+    switch (job.status) {
+      case 'accepted':
+        options.push({ value: 'started', label: 'Start Job', icon: PlayCircle, color: 'bg-blue-500' });
+        break;
+      case 'started':
+        options.push({ value: 'completed', label: 'Complete Job', icon: CheckCircle, color: 'bg-green-500' });
+        break;
+      default:
+        break;
+    }
+    
+    return options;
+  };
+
   const getStatusConfig = (status) => {
     switch (status) {
       case "pending":
         return { color: "bg-yellow-100 text-yellow-800", icon: Clock, label: "Pending" };
       case "accepted":
         return { color: "bg-blue-100 text-blue-800", icon: CheckCircle, label: "Accepted" };
-      case "in_progress":
+      case "started":
         return { color: "bg-purple-100 text-purple-800", icon: Clock, label: "In Progress" };
       case "completed":
         return { color: "bg-green-100 text-green-800", icon: CheckCircle, label: "Completed" };
@@ -259,14 +336,11 @@ export default function JobDetails() {
               </div>
               
               <div className="text-right ml-6">
-                <p className="text-3xl font-bold text-gray-900">₹{safeString(job.budget, '0')}</p>
-                <p className="text-sm text-gray-500">Budget</p>
-                
                 {job.status === 'pending' && (
                   <button
                     onClick={handleAcceptJob}
                     disabled={accepting}
-                    className="mt-4 w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {accepting ? (
                       <>
@@ -280,6 +354,64 @@ export default function JobDetails() {
                       </>
                     )}
                   </button>
+                )}
+                
+                {/* Status Change Dropdown for Accepted and Started Jobs */}
+                {(job.status === 'accepted' || job.status === 'started') && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                      disabled={statusChanging}
+                      className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {statusChanging ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <PlayCircle size={18} />
+                          Change Status
+                          <ChevronDown size={16} />
+                        </>
+                      )}
+                    </button>
+                    
+                    {showStatusDropdown && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                        {getAvailableStatusOptions().map((option) => {
+                          const Icon = option.icon;
+                          return (
+                            <button
+                              key={option.value}
+                              onClick={() => handleStatusChange(option.value)}
+                              disabled={statusChanging}
+                              className={`w-full px-4 py-2 text-left flex items-center gap-2 hover:bg-gray-50 transition-colors ${option.color} text-white`}
+                            >
+                              <Icon size={16} />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Show status for completed jobs */}
+                {job.status === 'completed' && (
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
+                      <CheckCircle size={18} />
+                      <span className="font-medium">Completed</span>
+                    </div>
+                    {job.totalAmount && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Total Amount: ${job.totalAmount}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

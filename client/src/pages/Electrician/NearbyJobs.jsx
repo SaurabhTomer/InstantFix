@@ -264,8 +264,6 @@ export default function NearbyJobs() {
                     </div>
 
                     <div className="text-right ml-6">
-                      <p className="text-2xl font-bold text-gray-900 mb-1">₹{job.budget || '500'}</p>
-                      <p className="text-sm text-gray-500 mb-3">Budget</p>
                       <button
                         onClick={() => handleAcceptJob(job._id)}
                         className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 mb-2"

@@ -1,9 +1,25 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Users, DollarSign, Star, User, X, Menu, Zap, MapPin, Search } from "lucide-react";
+import { useDispatch } from "react-redux";
+import { logout } from "../../store/authSlice.js";
+import { Home, Calendar, Users, DollarSign, User, X, Menu, Zap, MapPin, Search, LogOut } from "lucide-react";
 
 export default function ElectricianSidebar({ isOpen, onClose, onMenuClick }) {
   const location = useLocation();
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    // Show confirmation dialog
+    const confirmLogout = window.confirm('Are you sure you want to logout?');
+    
+    if (confirmLogout) {
+      // Dispatch logout action from Redux
+      dispatch(logout());
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+  };
   
   const menuItems = [
     {
@@ -34,15 +50,8 @@ export default function ElectricianSidebar({ isOpen, onClose, onMenuClick }) {
       path: "/electrician/earnings",
       color: "text-gray-600"
     },
-    {
+        {
       id: 5,
-      name: "Reviews",
-      icon: Star,
-      path: "/electrician/reviews",
-      color: "text-gray-600"
-    },
-    {
-      id: 6,
       name: "Profile",
       icon: User,
       path: "/electrician/profile",
@@ -112,6 +121,17 @@ export default function ElectricianSidebar({ isOpen, onClose, onMenuClick }) {
             })}
           </ul>
         </nav>
+
+        {/* Logout Button */}
+        <div className="p-4 border-t border-gray-100">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
     </>
   );

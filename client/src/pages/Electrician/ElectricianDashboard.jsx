@@ -6,6 +6,7 @@ import {
   TrendingUp, Users, DollarSign, Calendar, MapPin, Phone, MessageSquare, ChevronLeft, ChevronRight
 } from "lucide-react";
 import ElectricianSidebar from "./ElectricianSidebar";
+import api from "../../api/axios.js";
 
 export default function ElectricianDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -14,9 +15,7 @@ export default function ElectricianDashboard() {
     totalBookings: 0,
     completedBookings: 0,
     pendingBookings: 0,
-    totalEarnings: 0,
-    averageRating: 0,
-    responseRate: 0
+    averageRating: 0
   });
   const [recentBookings, setRecentBookings] = useState([]);
   const navigate = useNavigate();
@@ -47,48 +46,81 @@ export default function ElectricianDashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Mock data for now - replace with actual API calls
-      setStats({
-        totalBookings: 45,
-        completedBookings: 38,
-        pendingBookings: 3,
-        totalEarnings: 12500,
-        averageRating: 4.8,
-        responseRate: 95
-      });
-
-      setRecentBookings([
-        {
-          id: 1,
-          customerName: "Rajesh Kumar",
-          service: "Wiring Repair",
-          location: "Sector 15, Noida",
-          status: "pending",
-          time: "2 hours ago",
-          amount: 800
-        },
-        {
-          id: 2,
-          customerName: "Priya Sharma",
-          service: "Panel Installation",
-          location: "Greater Noida",
-          status: "accepted",
-          time: "5 hours ago",
-          amount: 1500
-        },
-        {
-          id: 3,
-          customerName: "Amit Verma",
-          service: "AC Wiring",
-          location: "Sector 62, Noida",
-          status: "completed",
-          time: "1 day ago",
-          amount: 1200
-        }
-      ]);
+      // Fetch real bookings data
+      const bookingsResponse = await api.get('/api/electrician/jobs');
+      
+      if (bookingsResponse.data.success) {
+        const bookings = bookingsResponse.data.jobs || [];
+        
+        // Calculate stats from real data
+        const totalBookings = bookings.length;
+        const completedBookings = bookings.filter(b => b.status === 'completed').length;
+        const pendingBookings = bookings.filter(b => b.status === 'pending').length;
+        const acceptedBookings = bookings.filter(b => b.status === 'accepted').length;
+        const inProgressBookings = bookings.filter(b => b.status === 'in_progress').length;
+        
+                
+        // Get recent bookings (last 5)
+        const recentBookingsData = bookings
+          .sort((a, b) => new Date(b.createdAt || b.acceptedAt) - new Date(a.createdAt || b.acceptedAt))
+          .slice(0, 5)
+          .map(booking => {
+            let actualCharge = 0;
+            
+            // Only show charge for completed jobs
+            if (booking.status === 'completed' && booking.actualCharge) {
+              actualCharge = booking.actualCharge;
+            }
+            
+            return {
+              id: booking._id,
+              customerName: booking.customer?.name || 'Unknown Customer',
+              service: booking.category || 'Electrical Service',
+              location: typeof booking.address === 'string' 
+                ? booking.address 
+                : `${booking.address?.city || ''}, ${booking.address?.state || ''}`.trim() || 'Location not specified',
+              status: booking.status,
+              time: getTimeAgo(booking.createdAt || booking.acceptedAt),
+              amount: actualCharge, // Only show actual charge for completed jobs
+              distance: booking.distanceKm
+            };
+          });
+        
+        setStats({
+          totalBookings,
+          completedBookings,
+          pendingBookings: pendingBookings + acceptedBookings + inProgressBookings,
+          averageRating: 0 // Will be implemented later
+        });
+        
+        setRecentBookings(recentBookingsData);
+      }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      // Set empty state on error
+      setStats({
+        totalBookings: 0,
+        completedBookings: 0,
+        pendingBookings: 0,
+        averageRating: 0
+      });
+      setRecentBookings([]);
     }
+  };
+
+  // Helper function to format time ago
+  const getTimeAgo = (dateString) => {
+    if (!dateString) return 'Unknown time';
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return date.toLocaleDateString();
   };
 
   const getStatusConfig = (status) => {
@@ -182,8 +214,8 @@ export default function ElectricianDashboard() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white rounded-xl p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-2">
                 <Calendar className="text-blue-500" size={20} />
                 <span className="text-xs text-gray-500">Total</span>
@@ -192,7 +224,7 @@ export default function ElectricianDashboard() {
               <p className="text-sm text-gray-600">Bookings</p>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
+            <div className="bg-white rounded-xl p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-2">
                 <CheckCircle className="text-green-500" size={20} />
                 <span className="text-xs text-gray-500">Done</span>
@@ -201,7 +233,7 @@ export default function ElectricianDashboard() {
               <p className="text-sm text-gray-600">Completed</p>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
+            <div className="bg-white rounded-xl p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-2">
                 <AlertCircle className="text-yellow-500" size={20} />
                 <span className="text-xs text-gray-500">Active</span>
@@ -210,16 +242,8 @@ export default function ElectricianDashboard() {
               <p className="text-sm text-gray-600">Pending</p>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <DollarSign className="text-emerald-500" size={20} />
-                <span className="text-xs text-gray-500">Earned</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">₹{stats.totalEarnings.toLocaleString()}</p>
-              <p className="text-sm text-gray-600">This Month</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
+            
+            <div className="bg-white rounded-xl p-6 border border-gray-100">
               <div className="flex items-center justify-between mb-2">
                 <Star className="text-amber-500" size={20} />
                 <span className="text-xs text-gray-500">Rating</span>
@@ -228,15 +252,7 @@ export default function ElectricianDashboard() {
               <p className="text-sm text-gray-600">Average</p>
             </div>
 
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <TrendingUp className="text-purple-500" size={20} />
-                <span className="text-xs text-gray-500">Response</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stats.responseRate}%</p>
-              <p className="text-sm text-gray-600">Rate</p>
-            </div>
-          </div>
+                      </div>
 
           {/* Recent Bookings */}
           <div className="bg-white rounded-xl border border-gray-100">
@@ -269,8 +285,10 @@ export default function ElectricianDashboard() {
                         <StatusIcon size={12} />
                         {statusConfig.label}
                       </div>
-                      <p className="text-sm font-semibold text-gray-900 mt-2">₹{booking.amount}</p>
-                      <p className="text-xs text-gray-500">{booking.time}</p>
+                      {booking.status === 'completed' && booking.amount > 0 && (
+                        <p className="text-sm font-semibold text-gray-900 mt-2">Charge: {booking.amount}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">{booking.time}</p>
                     </div>
                   </div>
                 );

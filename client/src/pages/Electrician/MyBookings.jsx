@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Calendar, Clock, DollarSign, MapPin, User, Phone, Star,
   Filter, Search, AlertCircle, CheckCircle, XCircle, PlayCircle,
-  MessageSquare, Navigation, ArrowRight, RefreshCw
+  MessageSquare, Navigation, ArrowRight, RefreshCw, ArrowLeft
 } from "lucide-react";
 import api from "../../api/axios.js";
 
@@ -20,7 +20,7 @@ export default function MyBookings() {
   const statusOptions = [
     { value: "all", label: "All Bookings" },
     { value: "accepted", label: "Accepted" },
-    { value: "in_progress", label: "In Progress" },
+    { value: "started", label: "In Progress" },
     { value: "completed", label: "Completed" },
     { value: "cancelled", label: "Cancelled" }
   ];
@@ -64,7 +64,7 @@ export default function MyBookings() {
       if (response.data.success) {
         setBookings(bookings.map(booking => 
           booking._id === bookingId 
-            ? { ...booking, status: 'in_progress' }
+            ? { ...booking, status: 'started' }
             : booking
         ));
         alert("Job started successfully!");
@@ -96,7 +96,7 @@ export default function MyBookings() {
     switch (status) {
       case "accepted":
         return { color: "bg-blue-100 text-blue-800", icon: CheckCircle, label: "Accepted" };
-      case "in_progress":
+      case "started":
         return { color: "bg-purple-100 text-purple-800", icon: PlayCircle, label: "In Progress" };
       case "completed":
         return { color: "bg-green-100 text-green-800", icon: CheckCircle, label: "Completed" };
@@ -142,7 +142,7 @@ export default function MyBookings() {
             Start Job
           </button>
         );
-      case "in_progress":
+      case "started":
         return (
           <button
             onClick={() => handleCompleteJob(booking._id)}
@@ -248,11 +248,6 @@ export default function MyBookings() {
             </div>
 
             <div className="text-right ml-6">
-              <p className="text-2xl font-bold text-gray-900 mb-1">
-                ₹{booking.budget ? String(booking.budget) : '0'}
-              </p>
-              <p className="text-sm text-gray-500 mb-3">Budget</p>
-              
               {getActionButtons(booking)}
               
               <button
@@ -282,9 +277,17 @@ export default function MyBookings() {
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
-              <p className="text-sm text-gray-600">Manage your accepted and ongoing jobs</p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/electrician/dashboard')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <ArrowLeft size={20} className="text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
+                <p className="text-sm text-gray-600">Manage your accepted and ongoing jobs</p>
+              </div>
             </div>
             <button
               onClick={fetchMyBookings}
