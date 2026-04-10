@@ -114,9 +114,7 @@ export default function ManageUsers() {
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-3 px-4 font-medium text-gray-700">User</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Contact Information</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Total Requests</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Joined</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,27 +147,13 @@ export default function ManageUsers() {
                           )}
                         </div>
                       </td>
-                      <td className="py-4 px-4">
-                        <span className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                          {user.totalRequests || 0} requests
-                        </span>
-                      </td>
+                   
                       <td className="py-4 px-4">
                         <span className="text-sm text-gray-600">
                           {new Date(user.createdAt).toLocaleDateString()}
                         </span>
                       </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => viewUserDetails(user._id)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="View Details"
-                          >
-                            <Eye size={16} />
-                          </button>
-                        </div>
-                      </td>
+                   
                     </tr>
                   ))}
                 </tbody>

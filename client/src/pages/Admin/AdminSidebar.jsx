@@ -13,7 +13,7 @@ export default function AdminSidebar({ isOpen, onClose }) {
 
   const menuItems = [
     { id: 1, name: "Dashboard",           icon: LayoutDashboard, path: "/admin/dashboard" },
-    { id: 2, name: "Manage Users",        icon: Users,           path: "/admin/users" },
+    { id: 2, name: "Users",        icon: Users,           path: "/admin/users" },
     { id: 3, name: "Manage Electricians", icon: UserCheck,       path: "/admin/electricians" },
     { id: 4, name: "Service Requests",    icon: FileText,        path: "/admin/requests" },
   ];
