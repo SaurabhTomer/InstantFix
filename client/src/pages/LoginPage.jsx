@@ -25,14 +25,25 @@ export default function LoginPage() {
       });
       
       console.log("Login successful:", data);
+      console.log("User role:", data.user.role);
+      console.log("User data:", JSON.stringify(data.user, null, 2));
       
       dispatch(setUser(data.user));
       dispatch(setToken(data.accessToken));
       
+      // Force admin check for debugging
+      const isAdmin = data.user.email === 'admin@instantfix.com' || data.user.role === 'admin';
+      console.log("Is admin user:", isAdmin);
+      
       // Navigate based on user role
       if (data.user.role === 'electrician') {
+        console.log("Redirecting to electrician dashboard");
         navigate("/electrician/dashboard");
+      } else if (data.user.role === 'admin' || isAdmin) {
+        console.log("Redirecting to admin dashboard");
+        navigate("/admin/dashboard");
       } else {
+        console.log("Redirecting to user dashboard");
         navigate("/user/dashboard");
       }
     } catch (err) {
@@ -58,7 +69,9 @@ export default function LoginPage() {
         </Link>
 
         <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-lg">
-          <h1 className="text-2xl font-extrabold mb-1 tracking-tight">Welcome back</h1>
+          <h1 className="text-2xl font-extrabold mb-1 tracking-tight">
+  Welcome back to <span className="text-yellow-400">InstantFix</span>
+</h1>
           <p className="text-sm text-gray-600 mb-8">Sign in to your account to continue.</p>
 
           {error && (
@@ -113,6 +126,9 @@ export default function LoginPage() {
           <Link to="/register" className="text-yellow-400 hover:text-yellow-300 font-medium transition-colors">
             Create one
           </Link>
+        </p>
+        <p className="text-center text-xs text-gray-500 mt-4">
+          Admin access: admin@instantfix.com
         </p>
       </div>
     </div>

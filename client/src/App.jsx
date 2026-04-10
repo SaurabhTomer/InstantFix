@@ -17,6 +17,11 @@ import NearbyJobs from "./pages/Electrician/NearbyJobs";
 import JobDetails from "./pages/Electrician/JobDetails";
 import ElectricianBookings from "./pages/Electrician/MyBookings";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminLayout from "./pages/Admin/AdminLayout";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import ManageUsers from "./pages/Admin/ManageUsers";
+import ManageElectricians from "./pages/Admin/ManageElectricians";
+import ManageRequests from "./pages/Admin/ManageRequests";
 
 export default function App() {
   return (
@@ -42,6 +47,13 @@ export default function App() {
           <Route path="/electrician/nearby-jobs" element={<NearbyJobs />} />
           <Route path="/electrician/bookings" element={<ElectricianBookings />} />
           <Route path="/electrician/job-details/:requestId" element={<JobDetails />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin/*" element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          } />
         </Routes>
       </BrowserRouter>
     </Provider>
