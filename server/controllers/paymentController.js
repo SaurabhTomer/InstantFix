@@ -13,7 +13,7 @@ export const createOrder = async (req, res) => {
     const customerId = req.user._id
 
     // Fetch & validate request
-    const request = await Request.findById(requestId)
+    const request = await ServiceRequest.findById(requestId) 
 
     if (!request) return res.status(404).json({ message: 'Request not found' })
 
@@ -104,7 +104,7 @@ export const verifyPayment = async (req, res) => {
     if (!payment) return res.status(404).json({ message: 'Payment record not found' })
 
     //  Mark request as paid
-    await Request.findByIdAndUpdate(payment.request, { paymentStatus: 'paid' })
+    await ServiceRequest.findByIdAndUpdate(payment.request, { paymentStatus: 'paid' })
 
 
      // Notify electrician that payment has been received
@@ -145,7 +145,7 @@ export const markCashPaid = async (req, res) => {
     const { requestId } = req.body
     const electricianId = req.user._id
 
-    const request = await Request.findById(requestId)
+    const request = await ServiceRequest.findById(requestId)
     if (!request) return res.status(404).json({ message: 'Request not found' })
 
     if (request.electrician.toString() !== electricianId.toString())
@@ -169,7 +169,7 @@ export const markCashPaid = async (req, res) => {
     })
 
     // Mark request as paid
-    await Request.findByIdAndUpdate(requestId, { paymentStatus: 'paid' })
+    await ServiceRequest.findByIdAndUpdate(requestId, { paymentStatus: 'paid' })
 
      // Notify customer that electrician has recorded cash payment
     emitToUser(request.customer, 'payment_success', {
