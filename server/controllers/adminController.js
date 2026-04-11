@@ -206,3 +206,21 @@ export const getUsers = async (req, res, next) => {
         next(error)
     }
 }
+
+
+
+export const getRequestById = async (req, res, next) => {
+  try {
+    const request = await Request.findById(req.params.id)
+      .populate('customer', 'name email phone')
+      .populate('assignedElectrician', 'name email phone')
+      .lean();
+    
+    if (!request) {
+      return res.status(404).json({ success: false, message: 'Request not found' });
+    }
+    return res.status(200).json({ success: true, request });
+  } catch (error) {
+    next(error);
+  }
+};

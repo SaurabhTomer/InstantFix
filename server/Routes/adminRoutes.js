@@ -5,10 +5,13 @@ import {
     getElectricianById,
     updateElectricianStatus,
     getAllRequests,
-    getUsers
+    getUsers,
+    getRequestById
 } from '../controllers/adminController.js'
 import auth from '../middleware/auth.js'
 import roles from '../middleware/roles.js'
+
+
 
 const adminRouter = express.Router()
 
@@ -20,5 +23,6 @@ adminRouter.get('/electricians',            getElectricians)
 adminRouter.get('/electricians/:id',        getElectricianById)
 adminRouter.put('/electricians/:id/status', updateElectricianStatus)
 adminRouter.get('/requests',                getAllRequests)
+adminRouter.get('/requests/:id', getRequestById)
 
 export default adminRouter

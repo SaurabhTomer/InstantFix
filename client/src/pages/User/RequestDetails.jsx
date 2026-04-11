@@ -4,8 +4,9 @@ import api from "../../api/axios.js";
 import {
   ArrowLeft, Calendar, Clock, MapPin, User, Phone, Mail,
   FileText, AlertCircle, CheckCircle, XCircle, Eye, Camera,
-  Navigation, Star, MessageSquare, Wrench
+  Navigation, Star, Wrench,IndianRupee
 } from "lucide-react";
+
 
 export default function RequestDetails() {
   const { requestId } = useParams();
@@ -13,6 +14,7 @@ export default function RequestDetails() {
   const [request, setRequest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   // Status configuration
   const statusConfig = {
@@ -47,6 +49,60 @@ export default function RequestDetails() {
       text: "Cancelled"
     }
   };
+
+
+// Payment handler 
+const handlePayment = async () => {
+  setPaymentLoading(true);
+  try {
+    // Step 1: Order create karo
+    const { data } = await api.post('/api/payments/create-order', {
+      requestId: request._id
+    });
+
+    // Step 2: Razorpay checkout open karo
+    const options = {
+      key: data.keyId,
+      amount: data.amount * 100,
+      currency: data.currency,
+      name: "InstantFix",
+      description: `Payment for ${request.category}`,
+      order_id: data.orderId,
+      handler: async (response) => {
+        // Step 3: Verify payment
+        try {
+          const verifyRes = await api.post('/api/payments/verify', {
+            razorpayOrderId:   response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            paymentId:         data.paymentId,
+          });
+
+          if (verifyRes.data.message === 'Payment verified successfully') {
+            // Local state update — page reload nahi hogi
+            setRequest(prev => ({ ...prev, paymentStatus: 'paid' }));
+          }
+        } catch (err) {
+          console.error("Verify error:", err);
+        }
+      },
+      prefill: {
+        name:  request.customer?.name  || "",
+        email: request.customer?.email || "",
+        contact: request.customer?.phone || "",
+      },
+      theme: { color: "#F59E0B" }, // amber
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+
+  } catch (err) {
+    console.error("Payment error:", err);
+  } finally {
+    setPaymentLoading(false);
+  }
+};
 
   // Fetch request details
   const fetchRequestDetails = async () => {
@@ -148,20 +204,8 @@ export default function RequestDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span>Back</span>
-          </button>
-          <h1 className="text-xl font-semibold text-gray-900">Request Details</h1>
-          <div className="w-20"></div>
-        </div>
-      </div>
+    
+     
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -312,12 +356,7 @@ export default function RequestDetails() {
                       )}
                     </div>
                     
-                    {(request.status === 'accepted' || request.status === 'started' || request.status === 'in_progress') && (
-                      <button className="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-black font-medium rounded-lg transition-colors flex items-center gap-2">
-                        <MessageSquare size={16} />
-                        Chat
-                      </button>
-                    )}
+                   
                   </div>
                 </div>
               ) : (
@@ -334,6 +373,49 @@ export default function RequestDetails() {
                 </div>
               )}
             </div>
+
+                  {/* Payment Section */}
+      {request.status === 'completed' && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <IndianRupee size={20} className="text-gray-400" />
+            Payment
+          </h3>
+
+          {request.paymentStatus === 'paid' ? (
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-center gap-3">
+              <CheckCircle size={20} className="text-green-600" />
+              <div>
+                <p className="font-semibold text-green-800">Payment Completed</p>
+                <p className="text-sm text-green-600">₹{request.totalAmount} paid successfully</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="font-semibold text-gray-900">Amount Due</p>
+                  <p className="text-2xl font-bold text-amber-600">₹{request.totalAmount}</p>
+                </div>
+              </div>
+              <button
+                onClick={handlePayment}
+                disabled={paymentLoading}
+                className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-black font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {paymentLoading ? (
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <IndianRupee size={18} />
+                    Pay Now
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
           </div>
         </div>
       </div>

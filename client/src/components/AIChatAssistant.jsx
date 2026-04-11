@@ -131,9 +131,10 @@ export default function AIChatAssistant({ isOpen, onClose }) {
       />
 
       {/* Chat Window */}
-      <div className="fixed bottom-4 left-4 w-full max-w-md h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col lg:bottom-6 lg:left-6">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-amber-400 to-orange-400 text-white p-4 rounded-t-2xl flex items-center">
+    <div className="fixed bottom-4 right-4 w-full max-w-md h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-200 z-50 flex flex-col lg:bottom-6 lg:right-6">
+       
+                {/* Header */}
+        <div className="bg-gradient-to-r from-amber-400 to-orange-400 text-white p-4 rounded-t-2xl flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
               <Bot size={20} />
@@ -143,6 +144,12 @@ export default function AIChatAssistant({ isOpen, onClose }) {
               <p className="text-xs text-white/80">Always here to help</p>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Messages */}
