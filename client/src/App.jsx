@@ -7,13 +7,9 @@ import RegisterPage from "./pages/RegisterPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import PendingApprovalPage from "./pages/PendingApprovalPage";
 import UserLayout from "./pages/User/UserLayout";
-import ElectricianDashboard from "./pages/Electrician/ElectricianDashboard";
-import ElectricianProfile from "./pages/Electrician/ElectricianProfile";
-import NearbyJobs from "./pages/Electrician/NearbyJobs";
-import JobDetails from "./pages/Electrician/JobDetails";
-import ElectricianBookings from "./pages/Electrician/MyBookings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./pages/Admin/AdminLayout";
+import ElectricianLayout from "./pages/Electrician/ElectricianLayout";
 
 export default function App() {
   return (
@@ -41,31 +37,11 @@ export default function App() {
           } />
 
           {/* Electrician Routes */}
-          <Route path="/electrician/dashboard" element={
-            <ProtectedRoute allowedRoles={['electrician']}>
-              <ElectricianDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/electrician/profile" element={
-            <ProtectedRoute allowedRoles={['electrician']}>
-              <ElectricianProfile />
-            </ProtectedRoute>
-          } />
-          <Route path="/electrician/nearby-jobs" element={
-            <ProtectedRoute allowedRoles={['electrician']}>
-              <NearbyJobs />
-            </ProtectedRoute>
-          } />
-          <Route path="/electrician/bookings" element={
-            <ProtectedRoute allowedRoles={['electrician']}>
-              <ElectricianBookings />
-            </ProtectedRoute>
-          } />
-          <Route path="/electrician/job-details/:requestId" element={
-            <ProtectedRoute allowedRoles={['electrician']}>
-              <JobDetails />
-            </ProtectedRoute>
-          } />
+              <Route path="/electrician/*" element={
+      <ProtectedRoute allowedRoles={['electrician']}>
+        <ElectricianLayout />
+      </ProtectedRoute>
+    } />
 
           {/* Admin Routes */}
           <Route path="/admin/*" element={

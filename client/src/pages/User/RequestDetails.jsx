@@ -375,47 +375,58 @@ const handlePayment = async () => {
             </div>
 
                   {/* Payment Section */}
-      {request.status === 'completed' && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <IndianRupee size={20} className="text-gray-400" />
-            Payment
-          </h3>
-
-          {request.paymentStatus === 'paid' ? (
-            <div className="bg-green-50 border border-green-200 p-4 rounded-lg flex items-center gap-3">
-              <CheckCircle size={20} className="text-green-600" />
+                              
+            {request.status === 'completed' && (
               <div>
-                <p className="font-semibold text-green-800">Payment Completed</p>
-                <p className="text-sm text-green-600">₹{request.totalAmount} paid successfully</p>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="font-semibold text-gray-900">Amount Due</p>
-                  <p className="text-2xl font-bold text-amber-600">₹{request.totalAmount}</p>
-                </div>
-              </div>
-              <button
-                onClick={handlePayment}
-                disabled={paymentLoading}
-                className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-black font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {paymentLoading ? (
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <IndianRupee size={20} className="text-gray-400" />
+                  Payment
+                </h3>
+
+                {request.paymentStatus === 'paid' ? (
+                  // ✅ PAID BLOCK — cash ya online dono k liye
+                  <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CheckCircle size={20} className="text-green-600" />
+                      <p className="font-semibold text-green-800">Payment Completed</p>
+                    </div>
+                    <p className="text-sm text-green-600 ml-8">₹{request.totalAmount} successfully paid</p>
+                  </div>
+
                 ) : (
-                  <>
-                    <IndianRupee size={18} />
-                    Pay Now
-                  </>
+                  // ⏳ UNPAID BLOCK — do options
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-500">Amount Due</p>
+                      <p className="text-2xl font-bold text-amber-600">₹{request.totalAmount}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Online Payment */}
+                      <button
+                        onClick={handlePayment}
+                        disabled={paymentLoading}
+                        className="py-3 bg-amber-400 hover:bg-amber-500 text-black font-semibold rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {paymentLoading
+                          ? <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          : <><IndianRupee size={16} /> Pay Online</>
+                        }
+                      </button>
+
+                      {/* Cash info */}
+                      <div className="py-3 bg-gray-100 text-gray-600 font-medium rounded-xl flex items-center justify-center gap-2 text-sm">
+                        💵 Pay Cash
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-400 text-center">
+                      Cash payment will be confirmed by your electrician
+                    </p>
+                  </div>
                 )}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            )}
           </div>
         </div>
       </div>

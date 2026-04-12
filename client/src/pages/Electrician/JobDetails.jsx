@@ -1,589 +1,306 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import {
-  MapPin, Calendar, Clock, DollarSign, User, Phone, Mail,
-  AlertCircle, CheckCircle, XCircle, ArrowLeft, MessageSquare,
-  Star, Navigation, FileText, Camera, PlayCircle, ChevronDown
+  ArrowLeft, MapPin, Calendar, Clock, User, Phone, Mail,
+  AlertCircle, CheckCircle, XCircle, FileText, Camera,
+  PlayCircle, IndianRupee, Eye
 } from "lucide-react";
 import api from "../../api/axios.js";
 
 export default function JobDetails() {
   const { requestId } = useParams();
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [accepting, setAccepting] = useState(false);
-  const [message, setMessage] = useState("");
-  const [statusChanging, setStatusChanging] = useState(false);
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [actionMsg, setActionMsg] = useState("");
+  const [actionLoading, setActionLoading] = useState(null);
 
-  useEffect(() => {
-    fetchJobDetails();
-  }, [requestId]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showStatusDropdown && !event.target.closest('.relative')) {
-        setShowStatusDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showStatusDropdown]);
-
-  // Safe string conversion helper
-  const safeString = (value, fallback = '') => {
-    if (value === null || value === undefined) return fallback;
-    if (typeof value === 'string') return value;
-    if (typeof value === 'object') {
-      // Handle address objects
-      if (value.street || value.city || value.state || value.pincode) {
-        return `${value.street || ''}, ${value.city || ''}, ${value.state || ''} ${value.pincode || ''}`.replace(/^[,\s]+|[,\s]+$/g, '');
-      }
-      return fallback;
-    }
-    return String(value);
+  const statusConfig = {
+    pending:   { color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Clock,       label: "Pending" },
+    accepted:  { color: "bg-blue-50 text-blue-700 border-blue-200",       icon: CheckCircle, label: "Accepted" },
+    started:   { color: "bg-purple-50 text-purple-700 border-purple-200", icon: PlayCircle,  label: "In Progress" },
+    completed: { color: "bg-green-50 text-green-700 border-green-200",    icon: CheckCircle, label: "Completed" },
+    cancelled: { color: "bg-red-50 text-red-700 border-red-200",          icon: XCircle,     label: "Cancelled" },
   };
 
+  useEffect(() => { fetchJobDetails(); }, [requestId]);
+
   const fetchJobDetails = async () => {
+    setLoading(true);
+    setError("");
     try {
-      console.log("Fetching job details for ID:", requestId);
-      
-      // First try to get from assigned jobs
-      try {
-        const response = await api.get(`/api/electrician/jobs/${requestId}`);
-        console.log("Job details response from assigned jobs:", response.data);
-        
-        if (response.data.success) {
-          setJob(response.data.job);
-          console.log("Job data received:", response.data.job);
-          console.log("Job images:", response.data.job.images);
-          console.log("Images type:", typeof response.data.job.images);
-          console.log("Images length:", response.data.job.images?.length);
-          return;
-        } else {
-          console.log("Assigned jobs response failed:", response.data);
-        }
-      } catch (assignedError) {
-        console.log("Not found in assigned jobs, error:", assignedError.response?.status, assignedError.response?.data);
+      const res = await api.get(`/api/electrician/jobs/${requestId}`);
+      if (res.data.success) { setJob(res.data.job); return; }
+    } catch {}
+
+    try {
+      const res = await api.get(`/api/electrician/jobs/nearby?radius=100&limit=100`);
+      if (res.data.success) {
+        const found = res.data.jobs?.find(j => j._id === requestId);
+        if (found) { setJob(found); return; }
       }
-      
-      // If not found in assigned jobs, try to get from nearby jobs
-      console.log("Trying to find job in nearby jobs...");
-      const nearbyResponse = await api.get('/api/electrician/jobs/nearby?radius=100&limit=100');
-      console.log("Nearby jobs response:", nearbyResponse.data);
-      
-      if (nearbyResponse.data.success && nearbyResponse.data.jobs) {
-        console.log("Available nearby jobs:", nearbyResponse.data.jobs.map(j => ({ id: j._id, category: j.category })));
-        const job = nearbyResponse.data.jobs.find(j => j._id === requestId);
-        if (job) {
-          setJob(job);
-          console.log("Job found in nearby jobs:", job);
-          console.log("Job images from nearby:", job.images);
-          console.log("Images type from nearby:", typeof job.images);
-          console.log("Images length from nearby:", job.images?.length);
-          return;
-        } else {
-          console.log("Job not found in nearby jobs either");
-        }
+    } catch {}
+
+    setError("Job not found or not available to you.");
+    setLoading(false);
+  };
+
+  const handleAction = async (action) => {
+    setActionLoading(action);
+    setError("");
+    try {
+      const res = await api.put(`/api/electrician/jobs/${requestId}/${action}`);
+      if (res.data.success) {
+        const newStatus = action === 'accept' ? 'accepted' : action === 'start' ? 'started' : 'completed';
+        setJob(prev => ({ ...prev, status: newStatus, ...res.data.job }));
+        setActionMsg(`Job ${action}ed successfully!`);
+        setTimeout(() => setActionMsg(""), 3000);
       }
-      
-      setError("Job not found. This job may not exist or may not be available to you.");
-    } catch (error) {
-      console.error("Error fetching job details:", error);
-      console.error("Error response:", error.response?.data);
-      
-      // Handle specific error cases
-      if (error.response?.status === 403) {
-        setError("Access denied - this job is not available to you");
-      } else if (error.response?.status === 404) {
-        setError("Job not found - this job may have been deleted");
-      } else {
-        setError(error.response?.data?.message || "Failed to load job details");
-      }
+    } catch (err) {
+      setError(err.response?.data?.message || `Failed to ${action} job`);
     } finally {
+      setActionLoading(null);
       setLoading(false);
     }
   };
 
-  const handleAcceptJob = async () => {
-    setAccepting(true);
+  const handleCashPayment = async () => {
+    setActionLoading('cash');
+    setError("");
     try {
-      const response = await api.put(`/api/electrician/jobs/${requestId}/accept`);
-      
-      if (response.data.success) {
-        // Update job status
-        setJob(prev => ({
-          ...prev,
-          status: 'accepted',
-          electrician: user._id
-        }));
-        alert("Job accepted successfully!");
+      const res = await api.post('/api/payments/cash', { requestId });
+      if (res.data.message) {
+        setJob(prev => ({ ...prev, paymentStatus: 'paid' }));
+        setActionMsg("Cash payment recorded!");
+        setTimeout(() => setActionMsg(""), 3000);
       }
-    } catch (error) {
-      console.error("Error accepting job:", error);
-      alert(error.response?.data?.message || "Failed to accept job");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to record cash payment");
     } finally {
-      setAccepting(false);
+      setActionLoading(null);
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
-    setStatusChanging(true);
-    setShowStatusDropdown(false);
-    
-    try {
-      let endpoint = '';
-      switch (newStatus) {
-        case 'started':
-          endpoint = `/api/electrician/jobs/${requestId}/start`;
-          break;
-        case 'completed':
-          endpoint = `/api/electrician/jobs/${requestId}/complete`;
-          break;
-        default:
-          throw new Error('Invalid status change');
-      }
-      
-      const response = await api.put(endpoint);
-      
-      if (response.data.success) {
-        // Update job status
-        setJob(prev => ({
-          ...prev,
-          status: newStatus,
-          ...(response.data.job && response.data.job.startTime && { startTime: response.data.job.startTime }),
-          ...(response.data.job && response.data.job.endTime && { endTime: response.data.job.endTime }),
-          ...(response.data.job && response.data.job.totalAmount && { totalAmount: response.data.job.totalAmount })
-        }));
-        
-        const statusMessages = {
-          'started': 'Job started successfully! Timer is now running.',
-          'completed': 'Job completed successfully!'
-        };
-        
-        alert(statusMessages[newStatus] || 'Status updated successfully!');
-      }
-    } catch (error) {
-      console.error("Error changing status:", error);
-      alert(error.response?.data?.message || `Failed to change status to ${newStatus}`);
-    } finally {
-      setStatusChanging(false);
-    }
+  const formatAddress = (address) => {
+    if (!address) return "—";
+    if (typeof address === 'string') return address;
+    return [address.street, address.city, address.state, address.pincode].filter(Boolean).join(', ');
   };
 
-  const getAvailableStatusOptions = () => {
-    if (!job) return [];
-    
-    const options = [];
-    
-    switch (job.status) {
-      case 'accepted':
-        options.push({ value: 'started', label: 'Start Job', icon: PlayCircle, color: 'bg-blue-500' });
-        break;
-      case 'started':
-        options.push({ value: 'completed', label: 'Complete Job', icon: CheckCircle, color: 'bg-green-500' });
-        break;
-      default:
-        break;
-    }
-    
-    return options;
-  };
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case "pending":
-        return { color: "bg-yellow-100 text-yellow-800", icon: Clock, label: "Pending" };
-      case "accepted":
-        return { color: "bg-blue-100 text-blue-800", icon: CheckCircle, label: "Accepted" };
-      case "started":
-        return { color: "bg-purple-100 text-purple-800", icon: Clock, label: "In Progress" };
-      case "completed":
-        return { color: "bg-green-100 text-green-800", icon: CheckCircle, label: "Completed" };
-      case "cancelled":
-        return { color: "bg-red-100 text-red-800", icon: XCircle, label: "Cancelled" };
-      default:
-        return { color: "bg-gray-100 text-gray-800", icon: Clock, label: "Unknown" };
-    }
-  };
+  if (error || !job) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <AlertCircle size={40} className="text-red-400" />
+      <p className="text-gray-600">{error || "Job not found"}</p>
+      <button onClick={() => navigate(-1)} className="text-sm text-blue-600 hover:underline">Go back</button>
+    </div>
+  );
 
-  const getUrgencyConfig = (urgency) => {
-    switch (urgency) {
-      case "emergency":
-        return { color: "bg-red-100 text-red-800", label: "Emergency" };
-      case "urgent":
-        return { color: "bg-orange-100 text-orange-800", label: "Urgent" };
-      case "normal":
-        return { color: "bg-gray-100 text-gray-800", label: "Normal" };
-      default:
-        return { color: "bg-gray-100 text-gray-800", label: "Normal" };
-    }
-  };
+  const cfg = statusConfig[job.status] || statusConfig.pending;
+  const StatusIcon = cfg.icon;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading job details...</p>
-        </div>
-      </div>
-    );
-  }
+  return (
+    <div className="max-w-4xl mx-auto">
 
-  if (error || !job) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full mx-4">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-            <FileText size={48} className="text-gray-300 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Job Not Found</h2>
-            <p className="text-gray-600 mb-6">{error || "This job doesn't exist or you don't have access to it."}</p>
-            
-            <div className="space-y-3">
-              <button
-                onClick={() => navigate("/electrician/nearby-jobs")}
-                className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Find Available Jobs
-              </button>
-              
-              <button
-                onClick={() => navigate("/electrician/bookings")}
-                className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                View My Bookings
-              </button>
-              
-              <button
-                onClick={() => navigate(-1)}
-                className="w-full px-4 py-2 text-blue-600 hover:text-blue-700 transition-colors"
-              >
-                Go Back
-              </button>
+      {/* Back */}
+      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors">
+        <ArrowLeft size={16} /> Back
+      </button>
+
+      {/* Messages */}
+      {error && <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">{error}</div>}
+      {actionMsg && <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">{actionMsg}</div>}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {/* Left */}
+        <div className="lg:col-span-1 space-y-4">
+
+          {/* Status Card */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5 text-center">
+            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <StatusIcon size={24} className="text-blue-500" />
             </div>
-            
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500">
-                <strong>Job ID:</strong> {requestId}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                If you believe this is an error, please contact support.
-              </p>
+            <h2 className="font-semibold text-gray-900">{job.category || 'Electrical Service'}</h2>
+            <div className="mt-3">
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${cfg.color}`}>
+                <StatusIcon size={11} />
+                {cfg.label}
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-4 space-y-2">
+              {job.status === 'pending' && (
+                <button
+                  onClick={() => handleAction('accept')}
+                  disabled={actionLoading === 'accept'}
+                  className="w-full py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading === 'accept'
+                    ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    : <><CheckCircle size={14} /> Accept Job</>
+                  }
+                </button>
+              )}
+              {job.status === 'accepted' && (
+                <button
+                  onClick={() => handleAction('start')}
+                  disabled={actionLoading === 'start'}
+                  className="w-full py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading === 'start'
+                    ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    : <><PlayCircle size={14} /> Start Job</>
+                  }
+                </button>
+              )}
+              {job.status === 'started' && (
+                <button
+                  onClick={() => handleAction('complete')}
+                  disabled={actionLoading === 'complete'}
+                  className="w-full py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading === 'complete'
+                    ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    : <><CheckCircle size={14} /> Complete Job</>
+                  }
+                </button>
+              )}
+              {job.status === 'completed' && job.paymentStatus !== 'paid' && (
+                <button
+                  onClick={handleCashPayment}
+                  disabled={actionLoading === 'cash'}
+                  className="w-full py-2 bg-amber-400 text-black text-sm rounded-lg hover:bg-amber-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading === 'cash'
+                    ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    : <><IndianRupee size={14} /> Cash Received</>
+                  }
+                </button>
+              )}
+              {job.status === 'completed' && job.paymentStatus === 'paid' && (
+                <div className="w-full py-2 bg-green-50 text-green-700 border border-green-200 text-sm rounded-lg flex items-center justify-center gap-2">
+                  <CheckCircle size={14} /> Payment Done
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Financial Info */}
+          {job.status === 'completed' && (
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Payment Info</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Hourly Rate</span>
+                  <span className="font-medium">₹{job.hourlyRate || '—'}/hr</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Total Amount</span>
+                  <span className="font-bold text-gray-900">₹{job.totalAmount || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Payment</span>
+                  <span className={job.paymentStatus === 'paid' ? 'text-green-600 font-medium' : 'text-yellow-600'}>
+                    {job.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Timeline</h3>
+            <div className="space-y-3 text-sm">
+              {[
+                { label: "Posted",    value: job.createdAt },
+                { label: "Updated",   value: job.updatedAt },
+                { label: "Started",   value: job.startTime },
+                { label: "Completed", value: job.endTime },
+              ].filter(t => t.value).map(({ label, value }) => (
+                <div key={label} className="flex justify-between">
+                  <span className="text-gray-400">{label}</span>
+                  <span className="text-gray-700">
+                    {new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
 
-  const statusConfig = getStatusConfig(job.status);
-  const urgencyConfig = getUrgencyConfig(job.urgency || 'normal');
-  const StatusIcon = statusConfig.icon;
+        {/* Right */}
+        <div className="lg:col-span-2 space-y-4">
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        {/* Header */}
-        <div className="mb-6">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
-          >
-            <ArrowLeft size={20} />
-            Back
-          </button>
-          
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <h1 className="text-2xl font-bold text-gray-900">{safeString(job.category, 'Electrical Service')}</h1>
-                  <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${statusConfig.color}`}>
-                    <StatusIcon size={16} />
-                    {statusConfig.label}
-                  </div>
-                  <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${urgencyConfig.color}`}>
-                    <AlertCircle size={16} />
-                    {urgencyConfig.label}
-                  </div>
+          {/* Description */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <FileText size={14} className="text-gray-400" /> Description
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed">{job.description || '—'}</p>
+            {job.address && (
+              <div className="flex items-start gap-2 mt-4 pt-4 border-t border-gray-50">
+                <MapPin size={14} className="text-gray-300 mt-0.5 shrink-0" />
+                <p className="text-sm text-gray-500">{formatAddress(job.address)}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Customer */}
+          <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Customer</h3>
+            {job.customer ? (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
+                  <span className="text-sm font-semibold text-blue-600">
+                    {job.customer.name?.charAt(0)?.toUpperCase() || 'C'}
+                  </span>
                 </div>
-                
-                <p className="text-gray-600 mb-4">{safeString(job.description, 'No description provided')}</p>
-                
-                <div className="flex items-center gap-6 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Calendar size={16} />
-                    <span>Posted {new Date(job.createdAt || Date.now()).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock size={16} />
-                    <span>Updated {new Date(job.updatedAt || Date.now()).toLocaleDateString()}</span>
-                  </div>
-                  {job.distanceKm && (
-                    <div className="flex items-center gap-1">
-                      <Navigation size={16} />
-                      <span>{safeString(job.distanceKm)} km away</span>
-                    </div>
+                <div>
+                  <p className="font-medium text-gray-900 text-sm">{job.customer.name}</p>
+                  {job.customer.phone && (
+                    <a href={`tel:${job.customer.phone}`} className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-0.5">
+                      <Phone size={11} /> {job.customer.phone}
+                    </a>
+                  )}
+                  {job.customer.email && (
+                    <p className="text-xs text-gray-400 mt-0.5">{job.customer.email}</p>
                   )}
                 </div>
               </div>
-              
-              <div className="text-right ml-6">
-                {job.status === 'pending' && (
-                  <button
-                    onClick={handleAcceptJob}
-                    disabled={accepting}
-                    className="w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {accepting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Accepting...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={18} />
-                        Accept Job
-                      </>
-                    )}
-                  </button>
-                )}
-                
-                {/* Status Change Dropdown for Accepted and Started Jobs */}
-                {(job.status === 'accepted' || job.status === 'started') && (
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                      disabled={statusChanging}
-                      className="w-full px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {statusChanging ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <PlayCircle size={18} />
-                          Change Status
-                          <ChevronDown size={16} />
-                        </>
-                      )}
-                    </button>
-                    
-                    {showStatusDropdown && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                        {getAvailableStatusOptions().map((option) => {
-                          const Icon = option.icon;
-                          return (
-                            <button
-                              key={option.value}
-                              onClick={() => handleStatusChange(option.value)}
-                              disabled={statusChanging}
-                              className={`w-full px-4 py-2 text-left flex items-center gap-2 hover:bg-gray-50 transition-colors ${option.color} text-white`}
-                            >
-                              <Icon size={16} />
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Show status for completed jobs */}
-                {job.status === 'completed' && (
-                  <div className="text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-lg">
-                      <CheckCircle size={18} />
-                      <span className="font-medium">Completed</span>
-                    </div>
-                    {job.totalAmount && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        Total Amount: ${job.totalAmount}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Customer Information */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Customer Information</h2>
-              
-              {job.customer ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                      <User size={20} className="text-gray-500" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{safeString(job.customer.name, 'Customer')}</p>
-                      <p className="text-sm text-gray-500">Customer</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Phone size={16} className="text-gray-400" />
-                      <span className="text-sm">{safeString(job.customer.phone)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail size={16} className="text-gray-400" />
-                      <span className="text-sm">{safeString(job.customer.email)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span className="text-sm">{safeString(job.address)}</span>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-500">Customer information not available</p>
-              )}
-            </div>
-
-            {/* Job Description */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Job Details</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Description</h3>
-                  <p className="text-gray-600">{safeString(job.description, 'No detailed description provided')}</p>
-                </div>
-                
-                {job.images && job.images.length > 0 ? (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Images</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {job.images.map((image, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={typeof image === 'string' ? image : image.url || image.src}
-                            alt={`Job image ${index + 1}`}
-                            className="w-full h-32 object-cover rounded-lg border border-gray-200"
-                            onError={(e) => {
-                              console.error('Image failed to load:', image);
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">Images</h3>
-                    <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                      <Camera size={48} className="text-gray-300 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">No images provided for this job</p>
-                    </div>
-                  </div>
-                )}
-                
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Additional Notes</h3>
-                  <p className="text-gray-600">{safeString(job.notes, 'No additional notes provided')}</p>
-                </div>
-              </div>
-            </div>
+            ) : (
+              <p className="text-sm text-gray-400">No customer info</p>
+            )}
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-              
-              <div className="space-y-3">
-                {job.customer?.phone && (
-                  <button
-                    onClick={() => window.open(`tel:${safeString(job.customer.phone)}`)}
-                    className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Phone size={16} />
-                    Call Customer
-                  </button>
-                )}
-                
-                {job.customer?.email && (
-                  <button
-                    onClick={() => window.open(`mailto:${safeString(job.customer.email)}`)}
-                    className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Mail size={16} />
-                    Send Email
-                  </button>
-                )}
-                
-                <button
-                  className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  <MessageSquare size={16} />
-                  Send Message
-                </button>
+          {/* Photos */}
+          {job.photos?.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-100 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <Camera size={14} className="text-gray-400" /> Photos ({job.photos.length})
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                {job.photos.map((photo, i) => (
+                  <a key={i} href={photo} target="_blank" rel="noopener noreferrer">
+                    <img
+                      src={photo}
+                      alt={`Photo ${i + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border border-gray-100 hover:opacity-80 transition-opacity"
+                      onError={(e) => e.target.style.display = 'none'}
+                    />
+                  </a>
+                ))}
               </div>
             </div>
-
-            {/* Location */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Location</h2>
-              
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <MapPin size={16} className="text-gray-400" />
-                  <span className="text-sm text-gray-600">{safeString(job.address)}</span>
-                </div>
-                
-                {job.coordinates && (
-                  <button className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-                    <Navigation size={16} />
-                    Get Directions
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Timeline */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Timeline</h2>
-              
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Job Posted</p>
-                    <p className="text-xs text-gray-500">{new Date(job.createdAt).toLocaleString()}</p>
-                  </div>
-                </div>
-                
-                {job.status !== 'pending' && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Job Accepted</p>
-                      <p className="text-xs text-gray-500">{new Date(job.updatedAt).toLocaleString()}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

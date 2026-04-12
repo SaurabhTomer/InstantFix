@@ -24,7 +24,7 @@ export default function AdminLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* Top Navbar */}
+        {/* Top Navbar   with user name */}
         <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 sm:px-6 h-14 flex items-center justify-between">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -33,7 +33,7 @@ export default function AdminLayout() {
             <Menu size={20} />
           </button>
           <div className="hidden lg:block" />
-
+            
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-500">
               Welcome, <span className="font-medium text-gray-900">{user?.name || 'Admin'}</span>

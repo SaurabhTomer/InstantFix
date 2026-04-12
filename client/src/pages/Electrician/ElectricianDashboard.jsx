@@ -1,307 +1,196 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
-  Menu, Zap, Star, Clock, Search, Bell, ArrowRight, CheckCircle, XCircle, AlertCircle,
-  TrendingUp, Users, DollarSign, Calendar, MapPin, Phone, MessageSquare, ChevronLeft, ChevronRight
+  CheckCircle, XCircle, AlertCircle, Clock,
+  TrendingUp, Users, Calendar, MapPin, PlayCircle
 } from "lucide-react";
-import ElectricianSidebar from "./ElectricianSidebar";
 import api from "../../api/axios.js";
 
 export default function ElectricianDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [greeting, setGreeting] = useState("");
   const [stats, setStats] = useState({
-    totalBookings: 0,
-    completedBookings: 0,
-    pendingBookings: 0,
-    averageRating: 0
+    totalBookings: 0, completedBookings: 0,
+    pendingBookings: 0, averageRating: 0
   });
   const [recentBookings, setRecentBookings] = useState([]);
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
-  // Set dynamic greeting based on time of day
   useEffect(() => {
-    const updateGreeting = () => {
-      const hour = new Date().getHours();
-      if (hour < 12) {
-        setGreeting("Good morning");
-      } else if (hour < 17) {
-        setGreeting("Good afternoon");
-      } else {
-        setGreeting("Good evening");
-      }
+    const update = () => {
+      const h = new Date().getHours();
+      setGreeting(h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening");
     };
-
-    updateGreeting();
-    const interval = setInterval(updateGreeting, 60000);
-    return () => clearInterval(interval);
+    update();
+    const t = setInterval(update, 60000);
+    return () => clearInterval(t);
   }, []);
 
-  // Fetch dashboard data
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  useEffect(() => { fetchDashboardData(); }, []);
+
+  const getTimeAgo = (dateString) => {
+    if (!dateString) return "—";
+    const seconds = Math.floor((new Date() - new Date(dateString)) / 1000);
+    if (seconds < 60) return "Just now";
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+  };
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch real bookings data
-      const bookingsResponse = await api.get('/api/electrician/jobs');
-      
-      if (bookingsResponse.data.success) {
-        const bookings = bookingsResponse.data.jobs || [];
-        
-        // Calculate stats from real data
-        const totalBookings = bookings.length;
-        const completedBookings = bookings.filter(b => b.status === 'completed').length;
-        const pendingBookings = bookings.filter(b => b.status === 'pending').length;
-        const acceptedBookings = bookings.filter(b => b.status === 'accepted').length;
-        const inProgressBookings = bookings.filter(b => b.status === 'in_progress').length;
-        
-                
-        // Get recent bookings (last 5)
-        const recentBookingsData = bookings
-          .sort((a, b) => new Date(b.createdAt || b.acceptedAt) - new Date(a.createdAt || b.acceptedAt))
-          .slice(0, 5)
-          .map(booking => {
-            let actualCharge = 0;
-            
-            // Only show charge for completed jobs
-            if (booking.status === 'completed' && booking.actualCharge) {
-              actualCharge = booking.actualCharge;
-            }
-            
-            return {
-              id: booking._id,
-              customerName: booking.customer?.name || 'Unknown Customer',
-              service: booking.category || 'Electrical Service',
-              location: typeof booking.address === 'string' 
-                ? booking.address 
-                : `${booking.address?.city || ''}, ${booking.address?.state || ''}`.trim() || 'Location not specified',
-              status: booking.status,
-              time: getTimeAgo(booking.createdAt || booking.acceptedAt),
-              amount: actualCharge, // Only show actual charge for completed jobs
-              distance: booking.distanceKm
-            };
-          });
-        
+      const res = await api.get('/api/electrician/jobs');
+      if (res.data.success) {
+        const bookings = res.data.jobs || [];
+        const completed = bookings.filter(b => b.status === 'completed').length;
+        const active = bookings.filter(b => ['pending','accepted','started'].includes(b.status)).length;
+
         setStats({
-          totalBookings,
-          completedBookings,
-          pendingBookings: pendingBookings + acceptedBookings + inProgressBookings,
-          averageRating: 0 // Will be implemented later
+          totalBookings: bookings.length,
+          completedBookings: completed,
+          pendingBookings: active,
+          averageRating: 0
         });
-        
-        setRecentBookings(recentBookingsData);
+
+        setRecentBookings(
+          [...bookings]
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 5)
+        );
       }
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      // Set empty state on error
-      setStats({
-        totalBookings: 0,
-        completedBookings: 0,
-        pendingBookings: 0,
-        averageRating: 0
-      });
-      setRecentBookings([]);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Helper function to format time ago
-  const getTimeAgo = (dateString) => {
-    if (!dateString) return 'Unknown time';
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    
-    if (seconds < 60) return 'Just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
-    return date.toLocaleDateString();
-  };
-
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case "pending":
-        return {
-          color: "bg-yellow-100 text-yellow-800",
-          icon: AlertCircle,
-          label: "Pending"
-        };
-      case "accepted":
-        return {
-          color: "bg-blue-100 text-blue-800",
-          icon: Clock,
-          label: "Accepted"
-        };
-      case "completed":
-        return {
-          color: "bg-green-100 text-green-800",
-          icon: CheckCircle,
-          label: "Completed"
-        };
-      case "cancelled":
-        return {
-          color: "bg-red-100 text-red-800",
-          icon: XCircle,
-          label: "Cancelled"
-        };
-      default:
-        return {
-          color: "bg-gray-100 text-gray-800",
-          icon: Clock,
-          label: "Unknown"
-        };
-    }
+  const statusConfig = {
+    pending:   { color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Clock,        label: "Pending" },
+    accepted:  { color: "bg-blue-50 text-blue-700 border-blue-200",       icon: CheckCircle,  label: "Accepted" },
+    started:   { color: "bg-purple-50 text-purple-700 border-purple-200", icon: PlayCircle,   label: "In Progress" },
+    completed: { color: "bg-green-50 text-green-700 border-green-200",    icon: CheckCircle,  label: "Completed" },
+    cancelled: { color: "bg-red-50 text-red-700 border-red-200",          icon: XCircle,      label: "Cancelled" },
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <ElectricianSidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)}
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-      />
+    <div className="max-w-5xl mx-auto space-y-6">
 
-      {/* Main Content */}
-      <div className="flex-1 lg:ml-0">
-        {/* Navbar */}
-        <nav className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-            {/* Left - Empty now */}
-            <div className="flex items-center gap-4">
-            </div>
+      {/* Greeting */}
+      <div>
+        <p className="text-sm text-gray-400">{greeting} 👋</p>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome, <span className="text-blue-500">{user?.name || 'Electrician'}</span>
+        </h1>
+      </div>
 
-            {/* Center search */}
-            <div className="flex-1 max-w-md hidden sm:flex items-center bg-gray-100 rounded-xl px-4 gap-3 h-10">
-              <Search size={16} className="text-gray-400 shrink-0" />
-              <input
-                type="text"
-                placeholder="Search bookings..."
-                className="bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none w-full"
-              />
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Jobs",   value: stats.totalBookings,    icon: Calendar,     color: "text-blue-500",   bg: "bg-blue-50" },
+          { label: "Completed",    value: stats.completedBookings, icon: CheckCircle,  color: "text-green-500",  bg: "bg-green-50" },
+          { label: "Active",       value: stats.pendingBookings,   icon: AlertCircle,  color: "text-yellow-500", bg: "bg-yellow-50" },
+          { label: "Rating",       value: stats.averageRating || "—", icon: TrendingUp, color: "text-purple-500", bg: "bg-purple-50" },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className={`w-9 h-9 ${stat.bg} rounded-lg flex items-center justify-center mb-3`}>
+              <stat.icon size={18} className={stat.color} />
             </div>
-
-            {/* Right */}
-            <div className="flex items-center gap-3">
-              <Link to="/electrician/profile" className="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center text-sm font-semibold text-white hover:bg-blue-600 transition-colors overflow-hidden">
-                {user?.avatar ? (
-                  <img 
-                    src={user.avatar} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span>{user?.name?.charAt(0)?.toUpperCase() || 'E'}</span>
-                )}
-              </Link>
-            </div>
+            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+            <p className="text-sm text-gray-500 mt-0.5">{stat.label}</p>
           </div>
-        </nav>
+        ))}
+      </div>
 
-        {/* Page Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-          {/* Greeting */}
+      {/* Recent Bookings */}
+      <div className="bg-white rounded-xl border border-gray-100">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
-            <p className="text-sm text-gray-400 mb-0.5">{greeting} 👋</p>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, <span className="text-blue-500">{user?.name || 'Electrician'}</span>
-            </h1>
+            <h3 className="font-semibold text-gray-900">Recent Bookings</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Latest service requests</p>
           </div>
+          <button
+            onClick={() => navigate('/electrician/bookings')}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            View all
+          </button>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl p-6 border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <Calendar className="text-blue-500" size={20} />
-                <span className="text-xs text-gray-500">Total</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
-              <p className="text-sm text-gray-600">Bookings</p>
-            </div>
+        {recentBookings.length === 0 ? (
+          <div className="text-center py-12">
+            <Calendar size={36} className="text-gray-200 mx-auto mb-3" />
+            <p className="text-gray-400 text-sm">No bookings yet</p>
+            <button
+              onClick={() => navigate('/electrician/nearby-jobs')}
+              className="mt-3 text-sm text-blue-600 hover:underline"
+            >
+              Find nearby jobs →
+            </button>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {recentBookings.map((b) => {
+              const cfg = statusConfig[b.status] || statusConfig.pending;
+              const StatusIcon = cfg.icon;
+              const address = typeof b.address === 'string'
+                ? b.address
+                : [b.address?.city, b.address?.state].filter(Boolean).join(', ');
 
-            <div className="bg-white rounded-xl p-6 border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <CheckCircle className="text-green-500" size={20} />
-                <span className="text-xs text-gray-500">Done</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stats.completedBookings}</p>
-              <p className="text-sm text-gray-600">Completed</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-6 border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <AlertCircle className="text-yellow-500" size={20} />
-                <span className="text-xs text-gray-500">Active</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingBookings}</p>
-              <p className="text-sm text-gray-600">Pending</p>
-            </div>
-
-            
-            <div className="bg-white rounded-xl p-6 border border-gray-100">
-              <div className="flex items-center justify-between mb-2">
-                <Star className="text-amber-500" size={20} />
-                <span className="text-xs text-gray-500">Rating</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{stats.averageRating}</p>
-              <p className="text-sm text-gray-600">Average</p>
-            </div>
-
-                      </div>
-
-          {/* Recent Bookings */}
-          <div className="bg-white rounded-xl border border-gray-100">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900">Recent Bookings</h3>
-              <p className="text-sm text-gray-500">Latest service requests</p>
-            </div>
-            <div className="p-6 space-y-4">
-              {recentBookings.map((booking) => {
-                const statusConfig = getStatusConfig(booking.status);
-                const StatusIcon = statusConfig.icon;
-                
-                return (
-                  <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => navigate(`/electrician/job-details/${booking.id}`)}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Users size={20} className="text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{booking.customerName}</p>
-                        <p className="text-sm text-gray-600">{booking.service}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <MapPin size={12} className="text-gray-400" />
-                          <span className="text-xs text-gray-500">{booking.location}</span>
-                        </div>
-                      </div>
+              return (
+                <div
+                  key={b._id}
+                  onClick={() => navigate(`/electrician/job-details/${b._id}`)}
+                  className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 bg-blue-50 rounded-full flex items-center justify-center shrink-0">
+                      <Users size={16} className="text-blue-500" />
                     </div>
-                    <div className="text-right">
-                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
-                        <StatusIcon size={12} />
-                        {statusConfig.label}
-                      </div>
-                      {booking.status === 'completed' && booking.amount > 0 && (
-                        <p className="text-sm font-semibold text-gray-900 mt-2">Charge: {booking.amount}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-gray-900 text-sm truncate">
+                        {b.customer?.name || 'Customer'}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{b.category || 'Electrical Service'}</p>
+                      {address && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <MapPin size={10} className="text-gray-300" />
+                          <span className="text-xs text-gray-400 truncate">{address}</span>
+                        </div>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">{booking.time}</p>
                     </div>
                   </div>
-                );
-              })}
-              <button 
-                onClick={() => navigate('/electrician/nearby-jobs')}
-                className="w-full py-3 text-blue-600 font-medium hover:bg-blue-50 rounded-xl transition-colors"
-              >
-                View All Bookings →
-              </button>
-            </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
+                      <StatusIcon size={10} />
+                      {cfg.label}
+                    </span>
+                    <span className="text-xs text-gray-400">{getTimeAgo(b.createdAt)}</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 gap-4">
+        <button
+          onClick={() => navigate('/electrician/nearby-jobs')}
+          className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl p-5 text-left transition-colors"
+        >
+          <MapPin size={20} className="mb-3" />
+          <p className="font-semibold">Find Nearby Jobs</p>
+          <p className="text-sm text-blue-100 mt-0.5">Browse available requests</p>
+        </button>
+        <button
+          onClick={() => navigate('/electrician/bookings')}
+          className="bg-white hover:bg-gray-50 border border-gray-100 text-gray-900 rounded-xl p-5 text-left transition-colors"
+        >
+          <Calendar size={20} className="mb-3 text-blue-500" />
+          <p className="font-semibold">My Bookings</p>
+          <p className="text-sm text-gray-400 mt-0.5">Manage your jobs</p>
+        </button>
       </div>
     </div>
   );

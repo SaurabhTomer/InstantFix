@@ -1,375 +1,282 @@
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
-  Calendar, Clock, DollarSign, MapPin, User, Phone, Star,
-  Filter, Search, AlertCircle, CheckCircle, XCircle, PlayCircle,
-  MessageSquare, Navigation, ArrowRight, RefreshCw, ArrowLeft
+  Calendar, Clock, MapPin, User, Phone,
+  AlertCircle, CheckCircle, XCircle, Search,
+  PlayCircle, RefreshCw, IndianRupee
 } from "lucide-react";
 import api from "../../api/axios.js";
 
 export default function MyBookings() {
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionMsg, setActionMsg] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [actionLoading, setActionLoading] = useState(null);
 
   const statusOptions = [
-    { value: "all", label: "All Bookings" },
-    { value: "accepted", label: "Accepted" },
-    { value: "started", label: "In Progress" },
+    { value: "all",       label: "All Bookings" },
+    { value: "accepted",  label: "Accepted" },
+    { value: "started",   label: "In Progress" },
     { value: "completed", label: "Completed" },
-    { value: "cancelled", label: "Cancelled" }
+    { value: "cancelled", label: "Cancelled" },
   ];
 
-  useEffect(() => {
-    fetchMyBookings();
-  }, [filterStatus]);
+  const statusConfig = {
+    accepted:  { color: "bg-blue-50 text-blue-700 border-blue-200",     icon: CheckCircle,  label: "Accepted" },
+    started:   { color: "bg-purple-50 text-purple-700 border-purple-200", icon: PlayCircle,  label: "In Progress" },
+    completed: { color: "bg-green-50 text-green-700 border-green-200",   icon: CheckCircle,  label: "Completed" },
+    cancelled: { color: "bg-red-50 text-red-700 border-red-200",         icon: XCircle,      label: "Cancelled" },
+  };
+
+  useEffect(() => { fetchMyBookings(); }, [filterStatus]);
 
   const fetchMyBookings = async () => {
     setLoading(true);
     setError("");
-
     try {
       const params = new URLSearchParams();
-      if (filterStatus !== "all") {
-        params.append('status', filterStatus);
-      }
-
-      console.log("Fetching bookings from:", `/api/electrician/jobs?${params}`);
-      const response = await api.get(`/api/electrician/jobs?${params}`);
-      
-      console.log("Bookings response:", response.data);
-      
-      if (response.data.success) {
-        setBookings(response.data.jobs || []);
-      } else {
-        setBookings([]);
-      }
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
-      setError(error.response?.data?.message || "Failed to fetch bookings");
-      setBookings([]);
+      if (filterStatus !== "all") params.append('status', filterStatus);
+      const res = await api.get(`/api/electrician/jobs?${params}`);
+      if (res.data.success) setBookings(res.data.jobs || []);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to fetch bookings");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStartJob = async (bookingId) => {
+  const handleAction = async (bookingId, action) => {
+    setActionLoading(bookingId + action);
+    setError("");
     try {
-      const response = await api.put(`/api/electrician/jobs/${bookingId}/start`);
-      if (response.data.success) {
-        setBookings(bookings.map(booking => 
-          booking._id === bookingId 
-            ? { ...booking, status: 'started' }
-            : booking
+      const res = await api.put(`/api/electrician/jobs/${bookingId}/${action}`);
+      if (res.data.success) {
+        const newStatus = action === 'start' ? 'started' : 'completed';
+        setBookings(prev => prev.map(b =>
+          b._id === bookingId ? { ...b, status: newStatus } : b
         ));
-        alert("Job started successfully!");
+        setActionMsg(`Job ${action === 'start' ? 'started' : 'completed'} successfully!`);
+        setTimeout(() => setActionMsg(""), 3000);
       }
-    } catch (error) {
-      console.error("Error starting job:", error);
-      alert(error.response?.data?.message || "Failed to start job");
+    } catch (err) {
+      setError(err.response?.data?.message || `Failed to ${action} job`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const handleCompleteJob = async (bookingId) => {
+  const handleCashPayment = async (bookingId) => {
+    setActionLoading(bookingId + 'cash');
+    setError("");
     try {
-      const response = await api.put(`/api/electrician/jobs/${bookingId}/complete`);
-      if (response.data.success) {
-        setBookings(bookings.map(booking => 
-          booking._id === bookingId 
-            ? { ...booking, status: 'completed' }
-            : booking
+      const res = await api.post('/api/payments/cash', { requestId: bookingId });
+      if (res.data.message) {
+        setBookings(prev => prev.map(b =>
+          b._id === bookingId ? { ...b, paymentStatus: 'paid' } : b
         ));
-        alert("Job completed successfully!");
+        setActionMsg("Cash payment recorded successfully!");
+        setTimeout(() => setActionMsg(""), 3000);
       }
-    } catch (error) {
-      console.error("Error completing job:", error);
-      alert(error.response?.data?.message || "Failed to complete job");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to record cash payment");
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case "accepted":
-        return { color: "bg-blue-100 text-blue-800", icon: CheckCircle, label: "Accepted" };
-      case "started":
-        return { color: "bg-purple-100 text-purple-800", icon: PlayCircle, label: "In Progress" };
-      case "completed":
-        return { color: "bg-green-100 text-green-800", icon: CheckCircle, label: "Completed" };
-      case "cancelled":
-        return { color: "bg-red-100 text-red-800", icon: XCircle, label: "Cancelled" };
-      default:
-        return { color: "bg-gray-100 text-gray-800", icon: Clock, label: "Unknown" };
-    }
-  };
-
-  const getUrgencyConfig = (urgency) => {
-    switch (urgency) {
-      case "emergency":
-        return { color: "bg-red-100 text-red-800", label: "Emergency" };
-      case "urgent":
-        return { color: "bg-orange-100 text-orange-800", label: "Urgent" };
-      case "normal":
-        return { color: "bg-gray-100 text-gray-800", label: "Normal" };
-      default:
-        return { color: "bg-gray-100 text-gray-800", label: "Normal" };
-    }
-  };
-
-  const filteredBookings = bookings.filter(booking => {
-    if (!booking) return false;
-    const matchesSearch = searchTerm === "" || 
-      (booking.category && booking.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (booking.customer && booking.customer.name && booking.customer.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (booking.description && booking.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesSearch;
+  const filteredBookings = bookings.filter(b => {
+    if (!b) return false;
+    return searchTerm === "" ||
+      b.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const getActionButtons = (booking) => {
-    switch (booking.status) {
-      case "accepted":
-        return (
-          <button
-            onClick={() => handleStartJob(booking._id)}
-            className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors flex items-center justify-center gap-2"
-          >
-            <PlayCircle size={16} />
-            Start Job
-          </button>
-        );
-      case "started":
-        return (
-          <button
-            onClick={() => handleCompleteJob(booking._id)}
-            className="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
-          >
-            <CheckCircle size={16} />
-            Complete Job
-          </button>
-        );
-      case "completed":
-        return (
-          <button
-            disabled
-            className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <CheckCircle size={16} />
-            Completed
-          </button>
-        );
-      case "cancelled":
-        return (
-          <button
-            disabled
-            className="w-full px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <XCircle size={16} />
-            Cancelled
-          </button>
-        );
-      default:
-        return null;
-    }
+  const formatAddress = (address) => {
+    if (!address) return "—";
+    if (typeof address === 'string') return address;
+    return [address.street, address.city, address.state].filter(Boolean).join(', ');
   };
 
-  // Simple rendering to avoid object issues
-  const renderBookingCard = (booking) => {
-    try {
-      const statusConfig = getStatusConfig(booking.status);
-      const urgencyConfig = getUrgencyConfig(booking.urgency || 'normal');
-      const StatusIcon = statusConfig.icon;
-
-      // Safely format address
-      const formatAddress = (address) => {
-        if (!address) return '';
-        if (typeof address === 'string') return address;
-        return `${address.street || ''}, ${address.city || ''}, ${address.state || ''} ${address.pincode || ''}`.replace(/^[,\s]+|[,\s]+$/g, '');
-      };
-
-      return (
-        <div key={booking._id || booking.id || Math.random()} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {booking.category ? String(booking.category) : 'Electrical Service'}
-                </h3>
-                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
-                  <StatusIcon size={12} />
-                  {statusConfig.label}
-                </div>
-                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${urgencyConfig.color}`}>
-                  <AlertCircle size={12} />
-                  {urgencyConfig.label}
-                </div>
-              </div>
-              <p className="text-gray-600 mb-3">
-                {booking.description ? String(booking.description) : 'Service request'}
-              </p>
-              
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                <div className="flex items-center gap-1">
-                  <Calendar size={14} />
-                  <span>Accepted {new Date(booking.acceptedAt || booking.createdAt || Date.now()).toLocaleDateString()}</span>
-                </div>
-                {booking.distanceKm && (
-                  <div className="flex items-center gap-1">
-                    <MapPin size={14} />
-                    <span>{String(booking.distanceKm)} km away</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <User size={16} className="text-gray-400" />
-                  <span className="text-sm font-medium">
-                    {booking.customer && booking.customer.name ? String(booking.customer.name) : 'Customer'}
-                  </span>
-                </div>
-                {booking.customer && booking.customer.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone size={16} className="text-gray-400" />
-                    <span className="text-sm">{String(booking.customer.phone)}</span>
-                  </div>
-                )}
-                {booking.address && (
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-gray-400" />
-                    <span className="text-sm text-gray-600">{formatAddress(booking.address)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="text-right ml-6">
-              {getActionButtons(booking)}
-              
-              <button
-                onClick={() => navigate(`/electrician/job-details/${booking._id || booking.id}`)}
-                className="w-full mt-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-              >
-                <ArrowRight size={16} />
-                View Details
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    } catch (error) {
-      console.error("Error rendering booking:", error, booking);
-      return (
-        <div key={booking._id || booking.id || Math.random()} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <p className="text-red-600">Error displaying booking</p>
-        </div>
-      );
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => navigate('/electrician/dashboard')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft size={20} className="text-gray-600" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
-                <p className="text-sm text-gray-600">Manage your accepted and ongoing jobs</p>
-              </div>
-            </div>
-            <button
-              onClick={fetchMyBookings}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-              Refresh
-            </button>
-          </div>
+    <div className="max-w-5xl mx-auto space-y-5">
 
-          {/* Filters and Search */}
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search bookings..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            <div className="md:w-64">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {statusOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* Header */}
+      <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">My Bookings</h1>
+            <p className="text-sm text-gray-400 mt-0.5">Manage your accepted and ongoing jobs</p>
           </div>
+          <button
+            onClick={fetchMyBookings}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <RefreshCw size={15} />
+            Refresh
+          </button>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600">
-            {error}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search bookings..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
           </div>
-        )}
-
-        {/* Bookings List */}
-        {loading ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your bookings...</p>
-            </div>
-          </div>
-        ) : filteredBookings.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
-            <div className="text-center">
-              <Calendar size={48} className="text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
-              <p className="text-gray-600">
-                {filterStatus === "all" 
-                  ? "You haven't accepted any jobs yet. Check nearby jobs to get started."
-                  : `No ${filterStatus.replace('_', ' ')} bookings found.`}
-              </p>
-              {filterStatus === "all" && (
-                <button
-                  onClick={() => navigate('/electrician/nearby-jobs')}
-                  className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Find Jobs
-                </button>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredBookings.map(booking => renderBookingCard(booking))}
-          </div>
-        )}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="sm:w-44 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            {statusOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      {/* Messages */}
+      {error && (
+        <div className="px-4 py-3 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg">{error}</div>
+      )}
+      {actionMsg && (
+        <div className="px-4 py-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">{actionMsg}</div>
+      )}
+
+      {/* Bookings */}
+      {filteredBookings.length === 0 ? (
+        <div className="bg-white rounded-xl border border-gray-100 text-center py-16">
+          <Calendar size={40} className="text-gray-200 mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">No bookings found</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredBookings.map((b) => {
+            const cfg = statusConfig[b.status] || statusConfig.accepted;
+            const StatusIcon = cfg.icon;
+            const isActing = (action) => actionLoading === b._id + action;
+
+            return (
+              <div
+                key={b._id}
+                className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onClick={() => navigate(`/electrician/job-details/${b._id}`)}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-gray-900">{b.category || 'Electrical Service'}</p>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
+                        <StatusIcon size={10} />
+                        {cfg.label}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 mb-3 line-clamp-1">{b.description || '—'}</p>
+
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                      <div className="flex items-center gap-1.5">
+                        <User size={13} className="text-gray-300" />
+                        <span>{b.customer?.name || '—'}</span>
+                      </div>
+                      {b.customer?.phone && (
+                        <div className="flex items-center gap-1.5">
+                          <Phone size={13} className="text-gray-300" />
+                          <span>{b.customer.phone}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <MapPin size={13} className="text-gray-300" />
+                        <span>{formatAddress(b.address)}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={13} className="text-gray-300" />
+                        <span>{new Date(b.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      </div>
+                    </div>
+
+                    {/* Total amount if completed */}
+                    {b.status === 'completed' && b.totalAmount > 0 && (
+                      <div className="mt-3 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                        <IndianRupee size={13} />
+                        <span>Total: ₹{b.totalAmount}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col gap-2 shrink-0 min-w-[130px]">
+                    {b.status === 'accepted' && (
+                      <button
+                        onClick={() => handleAction(b._id, 'start')}
+                        disabled={isActing('start')}
+                        className="px-4 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      >
+                        {isActing('start')
+                          ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          : <><PlayCircle size={14} /> Start Job</>
+                        }
+                      </button>
+                    )}
+
+                    {b.status === 'started' && (
+                      <button
+                        onClick={() => handleAction(b._id, 'complete')}
+                        disabled={isActing('complete')}
+                        className="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      >
+                        {isActing('complete')
+                          ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          : <><CheckCircle size={14} /> Complete</>
+                        }
+                      </button>
+                    )}
+
+                    {/* Cash Payment Button */}
+                    {b.status === 'completed' && b.paymentStatus !== 'paid' && (
+                      <button
+                        onClick={() => handleCashPayment(b._id)}
+                        disabled={isActing('cash')}
+                        className="px-4 py-2 bg-amber-400 text-black text-sm rounded-lg hover:bg-amber-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                      >
+                        {isActing('cash')
+                          ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                          : <><IndianRupee size={14} /> Cash Received</>
+                        }
+                      </button>
+                    )}
+
+                    {/* Payment done */}
+                    {b.status === 'completed' && b.paymentStatus === 'paid' && (
+                      <div className="px-4 py-2 bg-green-50 text-green-700 border border-green-200 text-xs rounded-lg flex items-center justify-center gap-1.5">
+                        <CheckCircle size={13} />
+                        Payment Done
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
