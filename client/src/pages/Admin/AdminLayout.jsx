@@ -24,7 +24,7 @@ export default function AdminLayout() {
 
       <div className="flex-1 flex flex-col min-w-0">
 
-        {/* Top Navbar   with user name */}
+        {/* Top Navbar */}
         <header className="sticky top-0 z-30 bg-white border-b border-gray-100 px-4 sm:px-6 h-14 flex items-center justify-between">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
