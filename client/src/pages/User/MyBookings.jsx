@@ -285,7 +285,7 @@ export default function MyBookings() {
           </div>
         )}
 
-        {/* Bookings list */}
+        {/* Bookings list for user */}
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
             <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
