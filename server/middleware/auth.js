@@ -13,7 +13,7 @@ const auth = async (req, res, next) => {
     if (isBlacklisted) {
       return res.status(401).json({ success: false, message: 'Token is invalid' })
     }
-
+    //payload
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
     req.user = decoded
 
