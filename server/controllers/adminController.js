@@ -44,7 +44,7 @@ export const getStats = async (req, res, next) => {
             Electrician.countDocuments({ approvalStatus: 'rejected' }),
             ServiceRequest.countDocuments(),
             ServiceRequest.countDocuments({ status: 'pending' }),
-            ServiceRequest.countDocuments({ status: 'in-progress' }),
+            ServiceRequest.countDocuments({ status: 'started' }),
             ServiceRequest.countDocuments({ status: 'completed' }),
             ServiceRequest.countDocuments({ status: 'cancelled' })
         ])
@@ -149,7 +149,7 @@ export const getAllRequests = async (req, res, next) => {
     try {
         const { page, limit, skip } = getPagination(req.query)
 
-        const ALLOWED_STATUSES = ['pending', 'in-progress', 'completed', 'cancelled']
+        const ALLOWED_STATUSES = ['pending', 'accepted', 'started', 'completed', 'cancelled']
         const filter = {}
         if (req.query.status) {
             if (!ALLOWED_STATUSES.includes(req.query.status)) {
@@ -211,9 +211,9 @@ export const getUsers = async (req, res, next) => {
 
 export const getRequestById = async (req, res, next) => {
   try {
-    const request = await Request.findById(req.params.id)
+    const request = await ServiceRequest.findById(req.params.id)
       .populate('customer', 'name email phone')
-      .populate('assignedElectrician', 'name email phone')
+      .populate('electrician', 'name email phone')
       .lean();
     
     if (!request) {

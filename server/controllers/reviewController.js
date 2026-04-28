@@ -17,7 +17,7 @@ export const createReview = async (req, res) => {
     }
 
     // 2. Fetch the request
-    const request = await Request.findById(requestId)
+    const request = await ServiceRequest.findById(requestId)
     if (!request) {
       return res.status(404).json({ message: 'Request not found' })
     }

@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 const reviewSchema = new mongoose.Schema({
   request: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Request',
+    ref: 'ServiceRequest',
     required: true,
     unique: true,          // 1 review per request — enforced at DB level
   },
@@ -14,7 +14,7 @@ const reviewSchema = new mongoose.Schema({
   },
   electrician: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Electrician',
     required: true,
   },
   rating: {

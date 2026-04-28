@@ -1,4 +1,5 @@
 import User from '../models/User.js'
+import Electrician from '../models/Electrician.js'
 
 // @route PUT /api/auth/update-profile
 export const updateProfile = async (req, res, next) => {

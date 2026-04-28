@@ -37,7 +37,7 @@ export default function RegisterPage() {
         // Customers get logged in immediately
         dispatch(setUser(data.user));
         dispatch(setToken(data.accessToken));
-        navigate("/dashboard");
+        navigate("/user/dashboard");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");

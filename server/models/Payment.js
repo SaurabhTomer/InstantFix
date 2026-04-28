@@ -3,7 +3,7 @@ import mongoose from 'mongoose'
 const paymentSchema = new mongoose.Schema({
   request: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Request',
+    ref: 'ServiceRequest',
     required: true,
     unique: true,           // one payment record per request
   },

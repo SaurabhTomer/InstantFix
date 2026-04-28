@@ -45,6 +45,10 @@ const electricianSchema = new mongoose.Schema({
     state: { type: String, trim: true },
     pincode: { type: String, trim: true }
   },
+  avatar: {
+    type: String,
+    default: null
+  },
   // location coordinates of electrician
   location: {
     type: {
