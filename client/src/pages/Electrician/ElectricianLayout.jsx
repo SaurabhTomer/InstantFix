@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useSelector } from "react-redux";
+import socket from "../../socket";
 import { Link, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../../store/authSlice.js";
@@ -101,10 +102,41 @@ function ElectricianSidebar({ isOpen, onClose }) {
 
 export default function ElectricianLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toasts, setToasts] = useState([]);
   const { user } = useSelector((state) => state.auth);
+
+  const addToast = (msg) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, msg }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
+  };
+
+  useEffect(() => {
+    socket.on("new_request",       (data) => addToast(data.message));
+    socket.on("payment_received",  (data) => addToast(data.message));
+    socket.on("request_cancelled", (data) => addToast(data.message));
+    return () => {
+      socket.off("new_request");
+      socket.off("payment_received");
+      socket.off("request_cancelled");
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Toast notifications */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+        {toasts.map((t) => (
+          <div key={t.id} className="flex items-start gap-3 bg-white border border-blue-200 shadow-lg rounded-xl px-4 py-3 max-w-xs">
+            <Bell size={16} className="text-blue-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-gray-700 flex-1">{t.msg}</p>
+            <button onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}>
+              <X size={14} className="text-gray-400 hover:text-gray-700" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <ElectricianSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <div className="flex-1 flex flex-col min-w-0">

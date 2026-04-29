@@ -1,8 +1,8 @@
 // src/pages/User/UserLayout.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Menu, Bell, Zap } from "lucide-react";
+import { Menu, Bell, Zap, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import UserSidebar from "./UserSidebar";
 import UserDashboard from "./UserDashboard";
@@ -10,13 +10,43 @@ import MyBookings from "./MyBookings";
 import RequestDetails from "./RequestDetails";
 import BookRequest from "./BookRequest";
 import UserProfile from "./UserProfile";
+import socket from "../../socket";
 
 export default function UserLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toasts, setToasts] = useState([]);
   const { user } = useSelector((state) => state.auth);
+
+  const addToast = (msg) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, msg }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
+  };
+
+  useEffect(() => {
+    socket.on("request_update", (data) => addToast(data.message));
+    socket.on("payment_success",  (data) => addToast(data.message));
+    return () => {
+      socket.off("request_update");
+      socket.off("payment_success");
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast notifications */}
+      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+        {toasts.map((t) => (
+          <div key={t.id} className="flex items-start gap-3 bg-white border border-amber-200 shadow-lg rounded-xl px-4 py-3 max-w-xs">
+            <Bell size={16} className="text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-gray-700 flex-1">{t.msg}</p>
+            <button onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}>
+              <X size={14} className="text-gray-400 hover:text-gray-700" />
+            </button>
+          </div>
+        ))}
+      </div>
+
       <UserSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

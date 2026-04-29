@@ -4,7 +4,7 @@ import api from "../../api/axios.js";
 import {
   ArrowLeft, Calendar, Clock, MapPin, User, Phone, Mail,
   FileText, AlertCircle, CheckCircle, XCircle, Eye, Camera,
-  Navigation, Star, Wrench,IndianRupee
+  Navigation, Star, Wrench, IndianRupee, MessageSquare
 } from "lucide-react";
 
 
@@ -15,6 +15,16 @@ export default function RequestDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Review state
+  const [review, setReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewChecked, setReviewChecked] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState("");
 
   // Status configuration
   const statusConfig = {
@@ -124,11 +134,42 @@ const handlePayment = async () => {
     }
   };
 
+  const checkReview = async () => {
+    try {
+      const res = await api.get(`/api/reviews/check/${requestId}`);
+      setReview(res.data.review);
+    } catch {
+      // silently ignore
+    } finally {
+      setReviewChecked(true);
+    }
+  };
+
+  const submitReview = async () => {
+    if (rating === 0) return setReviewError("Please select a rating");
+    setReviewSubmitting(true);
+    setReviewError("");
+    try {
+      const res = await api.post("/api/reviews", { requestId, rating, comment });
+      setReview(res.data.review);
+    } catch (err) {
+      setReviewError(err.response?.data?.message || "Failed to submit review");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     if (requestId) {
       fetchRequestDetails();
     }
   }, [requestId]);
+
+  useEffect(() => {
+    if (request?.status === "completed" && request?.paymentStatus === "paid" && !reviewChecked) {
+      checkReview();
+    }
+  }, [request?.status, request?.paymentStatus]);
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -374,7 +415,76 @@ const handlePayment = async () => {
               )}
             </div>
 
-                  {/* Payment Section */}
+                  {/* Review Section */}
+            {request.status === "completed" && request.paymentStatus === "paid" && reviewChecked && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Star size={20} className="text-gray-400" />
+                  Rate this Electrician
+                </h3>
+
+                {review ? (
+                  <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
+                    <div className="flex items-center gap-1 mb-2">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={18}
+                          className={s <= review.rating ? "text-amber-400 fill-amber-400" : "text-gray-300"}
+                        />
+                      ))}
+                      <span className="ml-2 text-sm font-medium text-gray-700">{review.rating}/5</span>
+                    </div>
+                    {review.comment && (
+                      <p className="text-sm text-gray-600 italic">"{review.comment}"</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-2">Review submitted</p>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg space-y-3">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRating(s)}
+                          onMouseEnter={() => setHoverRating(s)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          className="transition-transform hover:scale-110"
+                        >
+                          <Star
+                            size={28}
+                            className={s <= (hoverRating || rating)
+                              ? "text-amber-400 fill-amber-400"
+                              : "text-gray-300"}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Write a comment (optional)..."
+                      rows={2}
+                      maxLength={500}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-400 resize-none"
+                    />
+                    {reviewError && (
+                      <p className="text-xs text-red-500">{reviewError}</p>
+                    )}
+                    <button
+                      onClick={submitReview}
+                      disabled={reviewSubmitting || rating === 0}
+                      className="px-5 py-2 bg-amber-400 hover:bg-amber-500 text-black text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {reviewSubmitting ? "Submitting..." : "Submit Review"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Payment Section */}
                               
             {request.status === 'completed' && (
               <div>
