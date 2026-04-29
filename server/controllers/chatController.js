@@ -31,7 +31,7 @@ RULES:
 export const chat = async (req, res) => {
   try {
     const { messages, requestId } = req.body
-    const customerId = req.user._id
+    const customerId = req.user.id
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ message: 'messages array is required' })

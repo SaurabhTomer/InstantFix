@@ -10,7 +10,7 @@ import { emitToUser } from '../config/socket.js'
 export const createOrder = async (req, res) => {
   try {
     const { requestId } = req.body
-    const customerId = req.user._id
+    const customerId = req.user.id
 
     // Fetch & validate request
     const request = await ServiceRequest.findById(requestId) 
@@ -143,7 +143,7 @@ export const verifyPayment = async (req, res) => {
 export const markCashPaid = async (req, res) => {
   try {
     const { requestId } = req.body
-    const electricianId = req.user._id
+    const electricianId = req.user.id
 
     const request = await ServiceRequest.findById(requestId)
     if (!request) return res.status(404).json({ message: 'Request not found' })

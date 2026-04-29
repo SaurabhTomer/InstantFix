@@ -6,7 +6,7 @@ import ServiceRequest from '../models/ServiceRequest.js'
 export const createReview = async (req, res) => {
   try {
     const { requestId, rating, comment } = req.body
-    const customerId = req.user._id
+    const customerId = req.user.id
 
     // 1. Validate input
     if (!requestId || !rating) {
@@ -98,7 +98,7 @@ export const getElectricianReviews = async (req, res) => {
 // GET /api/reviews/my — customer sees their own submitted reviews
 export const getMyReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ customer: req.user._id })
+    const reviews = await Review.find({ customer: req.user.id })
       .populate('electrician', 'name')
       .populate('request', 'category createdAt')
       .sort({ createdAt: -1 })
@@ -115,7 +115,7 @@ export const checkReview = async (req, res) => {
   try {
     const review = await Review.findOne({
       request:  req.params.requestId,
-      customer: req.user._id,
+      customer: req.user.id,
     })
     res.json({ reviewed: !!review, review: review || null })
   } catch (err) {
