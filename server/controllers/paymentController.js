@@ -2,7 +2,10 @@ import crypto from 'crypto'
 import razorpay from '../config/razorpay.js'
 import Payment from '../models/Payment.js'
 import ServiceRequest from '../models/ServiceRequest.js'
+import User from '../models/User.js'
+import Electrician from '../models/Electrician.js'
 import { emitToUser } from '../config/socket.js'
+import { sendPaymentSuccessEmail, sendPaymentReceivedEmail } from '../utils/sendEmail.js'
 
 
 
@@ -104,8 +107,11 @@ export const verifyPayment = async (req, res) => {
     if (!payment) return res.status(404).json({ message: 'Payment record not found' })
 
     //  Mark request as paid
-    await ServiceRequest.findByIdAndUpdate(payment.request, { paymentStatus: 'paid' })
-
+    const serviceRequest = await ServiceRequest.findByIdAndUpdate(
+      payment.request,
+      { paymentStatus: 'paid' },
+      { new: true }
+    ).lean()
 
      // Notify electrician that payment has been received
     emitToUser(payment.electrician, 'payment_received', {
@@ -116,8 +122,6 @@ export const verifyPayment = async (req, res) => {
       paidAt:    payment.paidAt
     })
 
-
-
     // Notify customer that payment was successful
     emitToUser(payment.customer, 'payment_success', {
       message:   'Payment successful',
@@ -127,7 +131,18 @@ export const verifyPayment = async (req, res) => {
       paidAt:    payment.paidAt
     })
 
-
+    // Send emails in background
+    const [customerUser, electricianUser] = await Promise.all([
+      User.findById(payment.customer).select('email').lean(),
+      Electrician.findById(payment.electrician).select('email').lean(),
+    ])
+    const emailData = {
+      amount:   payment.amount,
+      category: serviceRequest?.category || 'Electrical Service',
+      method:   'online',
+    }
+    if (customerUser?.email)    sendPaymentSuccessEmail(customerUser.email, emailData).catch(console.error)
+    if (electricianUser?.email) sendPaymentReceivedEmail(electricianUser.email, emailData).catch(console.error)
 
     res.json({ message: 'Payment verified successfully', payment })
 
@@ -188,7 +203,20 @@ export const markCashPaid = async (req, res) => {
       method:    'cash',
       paidAt:    payment.paidAt
     })
-    
+
+    // Send emails in background
+    const [customerUser, electricianUser] = await Promise.all([
+      User.findById(request.customer).select('email').lean(),
+      Electrician.findById(electricianId).select('email').lean(),
+    ])
+    const emailData = {
+      amount:   payment.amount,
+      category: request.category || 'Electrical Service',
+      method:   'cash',
+    }
+    if (customerUser?.email)    sendPaymentSuccessEmail(customerUser.email, emailData).catch(console.error)
+    if (electricianUser?.email) sendPaymentReceivedEmail(electricianUser.email, emailData).catch(console.error)
+
     res.json({ message: 'Cash payment recorded', payment })
 
   } catch (err) {

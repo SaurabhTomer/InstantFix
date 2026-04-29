@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 import ServiceRequest from '../models/ServiceRequest.js'
 import Electrician from '../models/Electrician.js'
 import { emitToUser } from '../config/socket.js'
+import {
+    sendJobAcceptedEmail,
+    sendJobStartedEmail,
+    sendJobCompletedEmail,
+} from '../utils/sendEmail.js'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -166,7 +171,7 @@ export const acceptJob = async (req, res, next) => {
             { _id: req.params.id, status: 'pending', electrician: null },
             { electrician: req.user.id, status: 'accepted', hourlyRate: electrician.hourlyRate },
             { returnDocument: 'after' }
-        ).populate('customer', 'name phone avatar')
+        ).populate('customer', 'name phone avatar email')
 
         if (!job) {
             // Distinguish between not found vs already taken
@@ -188,6 +193,14 @@ export const acceptJob = async (req, res, next) => {
             }
         })
 
+        if (job.customer.email) {
+            sendJobAcceptedEmail(job.customer.email, {
+                electricianName: electrician.name,
+                hourlyRate:      electrician.hourlyRate,
+                category:        job.category,
+            }).catch(console.error)
+        }
+
         return res.status(200).json({ success: true, message: 'Job accepted successfully', job })
     } catch (error) {
         next(error)
@@ -203,7 +216,7 @@ export const startJob = async (req, res, next) => {
             { _id: req.params.id, electrician: req.user.id, status: 'accepted' },
             { $set: { status: 'started', startTime: new Date() } },
             { new: true, runValidators: true }
-        ).populate('customer', 'name phone avatar')
+        ).populate('customer', 'name phone avatar email')
 
         if (!job) {
             // Distinguish between not found, not yours, or wrong status
@@ -221,12 +234,19 @@ export const startJob = async (req, res, next) => {
         }
 
           // Notify customer that electrician has started the job
-        emitToUser(job.customer, 'request_update', {
+        emitToUser(job.customer._id, 'request_update', {
             requestId: job._id,
             status:    'started',
             message:   'Electrician ne kaam shuru kar diya hai',
             startTime: job.startTime
         })
+
+        if (job.customer.email) {
+            sendJobStartedEmail(job.customer.email, {
+                electricianName: req.user.name || 'Your electrician',
+                category:        job.category,
+            }).catch(console.error)
+        }
 
         return res.status(200).json({
             success: true,
@@ -276,7 +296,7 @@ export const completeJob = async (req, res, next) => {
         job.totalAmount = totalAmount
         await job.save()
 
-        await job.populate('customer', 'name phone avatar')
+        await job.populate('customer', 'name phone avatar email')
 
 
           // Notify customer that job is complete and payment is due
@@ -287,6 +307,15 @@ export const completeJob = async (req, res, next) => {
             totalAmount: job.totalAmount,
             endTime:     job.endTime
         })
+
+        if (job.customer.email) {
+            sendJobCompletedEmail(job.customer.email, {
+                totalAmount: job.totalAmount,
+                category:    job.category,
+                billedHours: parseFloat(billedHours.toFixed(2)),
+                hourlyRate:  job.hourlyRate,
+            }).catch(console.error)
+        }
 
         return res.status(200).json({
             success: true,
