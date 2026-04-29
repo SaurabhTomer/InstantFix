@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Provider } from "react-redux";
+import { Provider, useSelector } from "react-redux";
 import { store } from "./store/store";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
@@ -10,11 +11,30 @@ import UserLayout from "./pages/User/UserLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminLayout from "./pages/Admin/AdminLayout";
 import ElectricianLayout from "./pages/Electrician/ElectricianLayout";
+import socket from "./socket";
+
+function SocketManager() {
+  const { user, isLoggedIn } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    if (isLoggedIn && user?._id) {
+      socket.connect();
+      socket.emit("register", user._id);
+
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [isLoggedIn, user?._id]);
+
+  return null;
+}
 
 export default function App() {
   return (
     <Provider store={store}>
       <BrowserRouter>
+        <SocketManager />
         <Routes>
           {/* Public Routes */}
           <Route path="/login"            element={<LoginPage />} />

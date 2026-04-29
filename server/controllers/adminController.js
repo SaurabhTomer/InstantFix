@@ -209,6 +209,19 @@ export const getUsers = async (req, res, next) => {
 
 
 
+// @route GET /api/admin/users/:id
+export const getUserById = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password').lean()
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' })
+        }
+        return res.status(200).json({ success: true, user })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export const getRequestById = async (req, res, next) => {
   try {
     const request = await ServiceRequest.findById(req.params.id)

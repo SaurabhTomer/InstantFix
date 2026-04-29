@@ -6,6 +6,7 @@ import {
     updateElectricianStatus,
     getAllRequests,
     getUsers,
+    getUserById,
     getRequestById
 } from '../controllers/adminController.js'
 import auth from '../middleware/auth.js'
@@ -19,6 +20,7 @@ adminRouter.use(auth, roles('admin'))
 
 adminRouter.get('/stats',                   getStats)
 adminRouter.get('/users',                   getUsers)
+adminRouter.get('/users/:id',               getUserById)
 adminRouter.get('/electricians',            getElectricians)
 adminRouter.get('/electricians/:id',        getElectricianById)
 adminRouter.put('/electricians/:id/status', updateElectricianStatus)
